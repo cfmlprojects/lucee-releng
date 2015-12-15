@@ -5,11 +5,11 @@
   </description>
 
   <property name="project.dir" location="../"/>
-  <property name="srcLoader" location="${project.dir}/lucee-java/lucee-loader/src/"/>
-  <property name="srcCore" location="${project.dir}/lucee-java/lucee-core/src/"/>
-  <property name="srcInst" location="${project.dir}/lucee-java/lucee-instrumentation/src/"/>
-  <property name="lib" location="${project.dir}/lucee-java/libs/"/>
-  <property name="debugLib" location="${project.dir}/lucee-java/lucee-debug/lib/"/>
+  <property name="srcLoader" location="${src.dir}/lucee-java/lucee-loader/src/"/>
+  <property name="srcCore" location="${src.dir}/lucee-java/lucee-core/src/"/>
+  <property name="srcInst" location="${src.dir}/lucee-java/lucee-instrumentation/src/"/>
+  <property name="lib" location="${src.dir}/lucee-java/libs/"/>
+  <property name="debugLib" location="${src.dir}/lucee-java/lucee-debug/lib/"/>
   <property name="resource.dir" location="${project.dir}/build/resource"/>
   <property name="infoIni" location="${srcCore}/lucee/runtime/Info.ini"/>
 
@@ -98,7 +98,7 @@
     <mvn-get-deps todir="${lib}" scope="compile" pomfile="lucee-lib.pom" />
   </target>
   	
-	<target name="init" depends="get.libs">
+	<target name="init" depends="exists.src.xml,get.libs">
     <checkJavaVersion />
     <!-- Create the time stamp -->
     <tstamp/>

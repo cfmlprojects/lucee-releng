@@ -6,12 +6,9 @@
 
   <import file="../build-core.xml"/>
 
-<!--
   <target name="build.pomparents" depends="core.artifact" description="add build artifacts to artifact repo">
--->
-  <target name="build.pomparents" description="add build artifacts to artifact repo">
     <!-- deploy the archtype-ish projects for things like heroku -->
-    <property name="lucee.poms.version" value="1.5.0" />
+    <property name="lucee.poms.version" value="1.0.0" />
     <copy toDir="${temp.dir}" overwrite="true">
       <fileset dir="${basedir}/package/resource/maven/" includes="*.pom" />
       <filterchain><expandproperties /></filterchain>
@@ -81,8 +78,8 @@
     <delete file="${basedir}/build-mvnlibs.xml"/>
     <!-- add the freshly built lucee-inst jar as a dependency -->
     <pom-and-deploy pomid="luceelibs.inst.pom" artifact="${dist.dir}/lucee-inst.jar" packaging="jar" buildtype="release"
-     groupId="org.lucee.lib" artifactId="lucee-inst" version="${version}" name="lucee-inst" />
-    <property name="depsxml" value='&lt;dependency groupId="org.lucee.lib" artifactId="lucee-inst" version="${version}"/&gt;${line.separator}' />
+     groupId="org.lucee.lib" artifactId="lucee-inst" version="${number}" name="lucee-inst" />
+    <property name="depsxml" value='&lt;dependency groupId="org.lucee.lib" artifactId="lucee-inst" version="${number}"/&gt;${line.separator}' />
 
     <!-- loop through all the jars and add them as dependencies -->
     <antcontrib:for param="file">
@@ -153,7 +150,7 @@
          regexp="\." replace="-" global="true" override="yes"/>
         <echo message="${basename} ${__depVer}"/>
         <pom-and-deploy pomid="luceelibs.${basename}.pom" artifact="@{file}" packaging="jar" buildtype="release"
-         groupId="org.lucee.lib" artifactId="${__depName}" version="${__depVer}" name="${__depName}" />
+         groupId="org.lucee.lib" artifactId="${basename}" version="${__depVer}" name="${basename}" />
         <antcontrib:var name="depsxml"
           value='${depsxml}&lt;dependency groupId="org.lucee.lib" artifactId="${basename}" version="${__depVer}"${line.separator}    type="jar" dest="${lib}" unzip="false"/&gt;${line.separator}' />
       </sequential>

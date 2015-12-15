@@ -16,19 +16,15 @@
     <copy todir="${war.target.dir}/WEB-INF/lib">
       <fileset dir="${dist.dir}" includes="lucee.jar,lucee-inst.jar"/>
       <fileset dir="${lib}" excludes=".classpath,.project,javax*servlet*.jar"/>    
-      <fileset dir="${lib}" includes="*felix*.jar"/>    
     </copy>
-    <copy todir="${war.target.dir}/lucee-server/bundles">
-      <fileset dir="${lib}" excludes=".classpath,.project,javax*servlet*.jar,*felix*.jar"/>
-    </copy>
-    <copy todir="${war.target.dir}/lucee-server/context">
-      <fileset dir="${src.dir}/source/cfml/context/"/>    
+    <copy todir="${war.target.dir}/WEB-INF/lib/lucee-server/context">
+      <fileset dir="${src.dir}/lucee-cfml/lucee-admin/"/>    
     </copy>
     <!--
-    <copy file="${dist.dir}/${version}.lco" toFile="${war.target.dir}/core.lco"/>
+    <copy file="${dist.dir}/${number}.lco" toFile="${war.target.dir}/core.lco"/>
     <delete file="${war.target.dir}/lucee-context.lar" />
     <zip destfile="${war.target.dir}/lucee-context.lar">
-      <zipfileset dir="${src.dir}/source/cfml/context" prefix="" />
+      <zipfileset dir="${src.dir}/lucee-cfml/lucee-admin" prefix="" />
     </zip>
     <zip destfile="${war.target.dir}/core.lco" update="true" duplicate="preserve">
       <zipfileset file="${war.target.dir}/lucee-context.lar" prefix="resource/context/" />
@@ -41,13 +37,13 @@
       toFile="${war.target.dir}/WEB-INF/lib/lucee-server/context/lucee-server.xml"/>
     <copy file="${srcCore}/resource/config/web.xml" 
       toFile="${war.target.dir}/WEB-INF/lucee/lucee-web.xml.cfm"/>
-    <mapping physical="${src.dir}/source/cfml" virtual="/lucee-cfml"/>
+    <mapping physical="${src.dir}/lucee-cfml" virtual="/lucee-cfml"/>
     <mapping physical="${war.target.dir}/WEB-INF/lib/lucee-server/context/" virtual="/lucee"/>
     <lucee-password server-password="${cfadmin.password}" web-password="${cfadmin.password}" />
   </target>
   
-  <target name="lucee.context" depends="lucee.tempwar" description="Create the lucee-context.lar">
-    <property name="context.src.dir" location="${src.dir}/source/cfml/context"/>
+  <target name="lucee.context" depends="lucee.tempwar" description="Create the railo-context.ra">
+    <property name="context.src.dir" location="${src.dir}/lucee-cfml/lucee-admin"/>
     <property name="context.lar.file" location="${dist.dir}/lucee-context.lar"/>
     <delete file="${context.lar.file}" />
     <replace-windows-slashes input="${context.src.dir}" property="context.src.dir" />
@@ -68,7 +64,7 @@
       </cftry><cfoutput>lucee Admin compiled to #url.lar_file#</cfoutput>
       ]]>
     </echo>
-    <server-run timeout="120">
+    <server-run>
       <echo>Compiling Railo Administrator</echo>
       <antcontrib:urlencode name="admincfml.location" location="${context.src.dir}" />
       <!-- after server-run, runwar.port will be the random port used, so set the url now -->

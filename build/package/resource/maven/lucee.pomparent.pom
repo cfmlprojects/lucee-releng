@@ -17,52 +17,15 @@
     <lucee.inst.version>${lucee.build.version.long}</lucee.inst.version>
   </properties>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.lucee</groupId>
-      <artifactId>lucee</artifactId>
-      <version>$${lucee.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.lucee.lib</groupId>
-      <artifactId>org.apache.felix.main</artifactId>
-      <version>[4.2.1,)</version>
-    </dependency>
-  </dependencies>
-  
+	<dependencies>
+		<dependency>
+			<groupId>org.lucee</groupId>
+			<artifactId>lucee</artifactId>
+			<version>$${lucee.version}</version>
+		</dependency>
+	</dependencies>
+
 <!-- 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>ant-magic</id>
-            <phase>package</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <tasks>
-                <move todir="${basedir}/target/${project.build.finalName}/lucee-server/bundle">
-                  <fileset dir="${basedir}/target/${project.build.finalName}/WEB-INF/lib"
-                   includes="*.jar"
-                   excludes="lucee-$${lucee.version}.jar,org.apache.felix*"/>
-                 </move>
-              </tasks>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-  
 	These may be useful in children POMs
 	<build>
 		<plugins>

@@ -1,79 +1,41 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>org.lucee</groupId>
-  <artifactId>lucee.pomparent.war</artifactId>
-  <packaging>pom</packaging>
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.lucee</groupId>
+	<artifactId>lucee.pomparent.war</artifactId>
+	<packaging>pom</packaging>
   <version>${lucee.poms.version}</version>
-  <name>lucee WAR</name>
+	<name>lucee WAR</name>
 
-  <parent>
-    <groupId>org.lucee</groupId>
-    <artifactId>lucee.pomparent</artifactId>
+	<parent>
+		<groupId>org.lucee</groupId>
+		<artifactId>lucee.pomparent</artifactId>
     <version>${lucee.poms.version}</version>
-  </parent>
+	</parent>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.lucee</groupId>
-      <artifactId>lucee</artifactId>
-      <version>$${lucee.version}</version>
-      <scope>provided</scope>
-    </dependency>
-  </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>2.10</version>
-        <executions>
-          <execution>
-            <id>copy-lucee-to-bundle-dir</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeArtifactIds>lucee</includeArtifactIds>
-              <excludeTransitive>true</excludeTransitive>
-              <outputDirectory>${project.build.directory}/${project.build.finalName}/WEB-INF/lib</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-to-bundle-dir</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <excludeArtifactIds>lucee</excludeArtifactIds>
-              <outputDirectory>${project.build.directory}/${project.build.finalName}/lucee-server/bundles</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-war-plugin</artifactId>
-        <version>2.6</version>
-        <configuration>
-          <warSourceDirectory>${web.xml}</warSourceDirectory>
-          <!-- <webXml>heroku/WEB-INF/web.xml</webXml> -->
-          <webResources>
-            <!-- this is relative to the pom.xml directory -->
-            <resource>
-              <directory>pub</directory>
-            </resource>
-            <resource>
-              <directory>src</directory>
-            </resource>
-          </webResources>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-war-plugin</artifactId>
+				<version>2.1.1</version>
+				<configuration>
+					<warSourceDirectory>${web.xml}</warSourceDirectory>
+					<!-- <webXml>heroku/WEB-INF/web.xml</webXml>  -->
+					<webResources>
+						<resource>
+							<!-- this is relative to the pom.xml directory -->
+							<directory>pub</directory>
+						</resource>
+						<resource>
+							<!-- this is relative to the pom.xml directory -->
+							<directory>src</directory>
+						</resource>
+					</webResources>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 
 </project>

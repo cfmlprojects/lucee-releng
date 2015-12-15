@@ -5,18 +5,16 @@
 	
   <target name="war.zip" depends="libs.zip" description="builds the war package">
     <!-- jars zip  -->
-    <zip destfile="${dist.dir}/bundles/lucee-${version}-jars.zip">
-      <zipfileset dir="${dist.dir}" includes="lucee.jar,lucee-inst.jar"/>
-      <zipfileset dir="${lib}" includes="*felix*.jar"/>
-      <zipfileset dir="${lib}" excludes=".classpath,.project,javax*servlet*.jar,*felix*.jar" prefix="lucee-server/bundles"/>
+    <zip destfile="${dist.dir}/bundles/lucee-${number}-jars.zip">
+        <zipfileset dir="${dist.dir}" includes="lucee.jar,lucee-inst.jar"/>
+        <zipfileset dir="${lib}" excludes=".classpath,.project,javax*servlet*.jar"/>    
     </zip>
 
     <!-- war file  -->
-    <zip destfile="${dist.dir}/bundles/lucee-${version}.war">
+    <zip destfile="${dist.dir}/bundles/lucee-${number}.war">
         <!-- jars -->
         <zipfileset dir="${dist.dir}" includes="lucee.jar,lucee-inst.jar" prefix="WEB-INF/lib"/>
-        <zipfileset dir="${lib}" includes="*felix*.jar" prefix="WEB-INF/lib"/>
-        <zipfileset dir="${lib}" excludes=".classpath,.project,javax*servlet*.jar,*felix*.jar" prefix="lucee-server/bundles"/>
+        <zipfileset dir="${lib}" excludes=".classpath,.project,javax*servlet*.jar" prefix="WEB-INF/lib"/>
         <!-- common files -->
         <zipfileset dir="${resource.dir}/common"/>
         <!-- war specific files -->
@@ -28,8 +26,8 @@
   </target>
 
   <target name="war.artifact" depends="war.zip" description="create core artifact">
-    <pom-and-deploy pomid="luceewar.pom" artifact="${dist.dir}/bundles/lucee-${version}.war" packaging="war" buildtype="${mvn.type}"
-     groupId="org.lucee" artifactId="lucee.war" version="${version}" name="lucee.war" />
+    <pom-and-deploy pomid="luceewar.pom" artifact="${dist.dir}/bundles/lucee-${number}.war" packaging="war" buildtype="${mvn.type}"
+     groupId="org.lucee" artifactId="lucee.war" version="${number}" name="lucee.war" />
   </target>
 	
 </project>

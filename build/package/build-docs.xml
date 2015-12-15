@@ -39,7 +39,7 @@
   <pom-and-deploy pomid="lucee.core.pom" packaging="jar" artifact="${dist.dir}/lucee.jar" buildtype="${mvn.type}"
      groupId="org.lucee" artifactId="lucee.core" version="${lucee.build.version.long}" name="lucee.core">
     <dependencies>
-      <dependency groupId="org.lucee" artifactId="lucee.libs" version="${version}" type="zip"/>
+      <dependency groupId="org.lucee" artifactId="lucee.libs" version="${number}" type="zip"/>
     </dependencies>
     <attachments>
       <attach file="${dist.dir}/${lucee.build.version.long}.lco" type="lco"/>

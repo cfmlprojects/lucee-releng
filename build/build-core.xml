@@ -4,22 +4,17 @@
     Build Lucee itself
   </description>
 
-  <property name="agent" value="lucee.runtime.instrumentation.ExternalAgent"/>
-
   <property name="project.dir" location="../"/>
-  <property name="srcLoader" location="${project.dir}/source/java/loader/src/"/>
-  <property name="srcCore" location="${project.dir}/source/java/core/src/"/>
-  <property name="srcInst" location="${project.dir}/source/java/instrumentation/src/"/>
-  <property name="lib" location="${project.dir}/source/java/libs/"/>
-  <property name="debugLib" location="${project.dir}/source/java/debug/lib/"/>
+  <property name="srcLoader" location="${project.dir}/lucee-java/lucee-loader/src/"/>
+  <property name="srcCore" location="${project.dir}/lucee-java/lucee-core/src/"/>
+  <property name="srcInst" location="${project.dir}/lucee-java/lucee-instrumentation/src/"/>
+  <property name="lib" location="${project.dir}/lucee-java/libs/"/>
+  <property name="debugLib" location="${project.dir}/lucee-java/lucee-debug/lib/"/>
   <property name="resource.dir" location="${project.dir}/build/resource"/>
   <property name="infoIni" location="${srcCore}/lucee/runtime/Info.ini"/>
 
-  <property name="bundleName" value="Lucee Core"/>
-  <property name="bundleSymbolicName" value="lucee.core"/>
-  <property file="build.properties"/>
-
-  <version-splitter property="lucee.build.version" version="${version}" bump=""/>
+  <property file="${infoIni}"/>
+  <version-splitter property="lucee.build.version" version="${number}" bump=""/>
   <import file="build-context.xml"/>
 
   <macrodef name="checkJavaVersion">
@@ -54,8 +49,8 @@
                 <contains string="${java.version}" substring="${lucee.javac.compiler}" casesensitive="false" />
 <!--
                 <contains string="${java.version}" substring="1.7" casesensitive="false" />
--->
                 <contains string="${java.version}" substring="1.8" casesensitive="false" />
+-->
               </or>
               </not> 
           </condition> 
@@ -92,6 +87,7 @@
 	</scriptdef>
 	
   <path id="classpath">
+    <!-- <pathelement location="${luceeLoader}" /> -->
     <fileset dir="${lib}">
       <include name="**/*.jar" />
     </fileset>
@@ -113,7 +109,7 @@
     <!-- Create the  directory structure needed -->
     <mkdir dir="${temp.dir}/loader"/>
     <mkdir dir="${temp.dir}/core"/>
-    <mkdir dir="${temp.dir}/agent"/>
+    <mkdir dir="${temp.dir}/inst"/>
 
     <tstamp>
       <format property="NOW" pattern="yyyy/MM/dd HH:mm:ss z" locale="en,GB"/>
@@ -134,7 +130,7 @@
 
   	<!-- set lucee/version file -->
     <currentTime property="ct" />
-    <echo file="${temp.dir}/loader/lucee/version" message="${version}:${ct}" encoding="UTF-8"/>
+    <echo file="${temp.dir}/loader/lucee/version" message="${number}:${ct}" encoding="UTF-8"/>
   </target>
 
 
@@ -161,27 +157,15 @@
       </fileset>
     </copy>
 
-    <!-- set date in default properties -->
-    <loadfile property="defprop"
-      srcFile="${temp.dir}/core/default.properties"/>
+    <!-- set current date in Info.ini -->
+    <loadfile property="defprop" srcFile="${srcCore}/lucee/runtime/Info.ini"/>
     <updatedate text="${defprop}" date="${NOW}" property="moddefprop" />
     <echo message="${moddefprop}"/>
-    <echo file="${temp.dir}/core/default.properties" message="${moddefprop}"/>
+    <echo file="${temp.dir}/core/lucee/runtime/Info.ini" message="${moddefprop}"/>
 
-    <!-- create the manifest file -->
-    <manifest file="${temp.dir}/core/META-INF/MANIFEST.MF" mode="update">
-      <attribute name="Bundle-Version" value="${version}"/>
-      <attribute name="Bundle-Name" value="${bundleName}"/>
-      <attribute name="Bundle-SymbolicName" value="${bundleSymbolicName}"/>
-      <attribute name="Bundle-ManifestVersion" value="2"/>
-      <attribute name="Built-Date" value="${NOW}"/>
-      <attribute name="State" value="${state}"/>
-      <attribute name="Minor-Name" value="${name}"/>
-      <attribute name="Minor-Name-Explanation" value="${name.explanation}"/>
-    </manifest>
   </target>
 
-  <target name="agent.compile" depends="core.compile" description="copy non java files" >
+  <target name="instrumentation.compile" depends="core.compile" description="copy non java files" >
     <!-- set class path for the compiler -->
     <path id="classpath">
       <pathelement location="${temp.dir}/loader" />
@@ -191,53 +175,47 @@
     </path>
 
     <!-- compile inst source to temp directory -->
-    <javac-ecj srcdir="${srcInst}" destdir="${temp.dir}/agent" 
+    <javac-ecj srcdir="${srcInst}" destdir="${temp.dir}/inst" 
       compliance="${lucee.javac.compiler}" classpath="${toString:classpath}"
       encoding="ISO-8859-1" fork="true" maxmemory="512m" />
 
     <!-- copy all non java files to temp/inst; this is not really necessary because there are no files, but it does not hurt-->
-    <copy todir="${temp.dir}/agent">
+    <copy todir="${temp.dir}/inst">
       <fileset dir="${srcInst}">
         <exclude name="**/*.java"/>
         <exclude name=".*"/>
       </fileset>
     </copy>
 
-    <!-- build the agent jar -->
+    <!-- build the inst jar -->
     <jar 
-        basedir="${temp.dir}/agent" 
-        jarfile="${temp.dir}/core/resource/lib/lucee-inst.jar" 
-        manifest="${srcInst}/META-INF/MANIFEST.MF"/> 
-    <copy file="${temp.dir}/core/resource/lib/lucee-inst.jar" toFile="${dist.dir}/lucee-inst.jar" />
+      jarfile="${dist.dir}/lucee-inst.jar" basedir="${temp.dir}/inst"  manifest="${srcInst}/META-INF/MANIFEST.MF">
+      <manifest>
+        <attribute name="Built-Date" value="${NOW}"/>
+      </manifest>
+    </jar>
   </target>
 
-  <target name="core.jar" depends="agent.compile" description="generate the core jar and copies to loader" >
+  <target name="core.jar" depends="instrumentation.compile" description="generate the core jar and copies to loader" >
     <!-- copy core to the loader -->
-    <jar 
-        basedir="${temp.dir}/core" 
-        jarfile="${temp.dir}/loader/core/core.lco" 
-        manifest="${temp.dir}/core/META-INF/MANIFEST.MF"/> 
-
+    <jar basedir="${temp.dir}/core" jarfile="${temp.dir}/loader/core/core.lco"/> 
     <!-- copy core AS WELL to the dist directory  -->
-    <copy file="${temp.dir}/loader/core/core.lco" tofile="${dist.dir}/${version}.lco"/> 
+    <copy file="${temp.dir}/loader/core/core.lco" tofile="${dist.dir}/${number}.lco"/> 
   </target>
 
   <target name="loader.jar" depends="core.jar" description="generate the loader jar" >
     <!-- create loader jar -->
-    <jar 
-      basedir="${temp.dir}/loader" 
-      jarfile="${dist.dir}/lucee.jar" 
-      manifest="${srcLoader}/META-INF/MANIFEST.MF"/>
+    <jar basedir="${temp.dir}/loader" jarfile="${dist.dir}/lucee.jar"/>    
     <delete dir="${temp.dir}"/>
   </target>
 
   <target name="context.lar" depends="lucee.context" description="inject the context.lar" >
     <!-- create lucee-context.lar and inject it into the .lco and then the lucee.jar -->
-    <zip destfile="${dist.dir}/${version}.lco" update="true" duplicate="preserve">
+    <zip destfile="${dist.dir}/${number}.lco" update="true" duplicate="preserve">
       <zipfileset file="${dist.dir}/lucee-context.lar" prefix="resource/context/" />
     </zip>
     <zip destfile="${dist.dir}/lucee.jar" update="true" duplicate="preserve">
-      <zipfileset file="${dist.dir}/${version}.lco" fullpath="core/core.lco" />
+      <zipfileset file="${dist.dir}/${number}.lco" fullpath="core/core.lco" />
     </zip>
   </target>
 
@@ -247,7 +225,7 @@
       <fileset dir="${srcCore}/resource/config/" includes="server.xml, web.xml" />
     </zip>
     <pom-and-deploy pomid="luceeconfig.pom" artifact="${temp.dir}/lucee-config.zip" packaging="zip" buildtype="${mvn.type}"
-     groupId="org.lucee" artifactId="lucee.config" version="${version}" name="lucee.config" />
+     groupId="org.lucee" artifactId="lucee.config" version="${number}" name="lucee.config" />
     <delete file="${temp.dir}/lucee-config.zip" />
 
     <!-- artifact for bundle wars (installer, express, etc., has welcome pages vs. empty war) -->
@@ -256,7 +234,7 @@
       <fileset dir="${basedir}/resource/website" />
     </zip>
     <pom-and-deploy pomid="luceebundlewar.pom" artifact="${temp.dir}/lucee-bundlewar.zip" packaging="zip" buildtype="${mvn.type}"
-     groupId="org.lucee" artifactId="lucee.bundlewar" version="${version}" name="lucee.bundlewar" />
+     groupId="org.lucee" artifactId="lucee.bundlewar" version="${number}" name="lucee.bundlewar" />
     <delete file="${temp.dir}/lucee-bundlewar.zip" />
 
     <!-- artifact for empty war (nothing besides WEB-INF) -->
@@ -264,7 +242,7 @@
       <fileset dir="${basedir}/resource/war" />
     </zip>
     <pom-and-deploy pomid="luceewartemplate.pom" artifact="${temp.dir}/lucee-wartemplate.zip" packaging="zip" buildtype="${mvn.type}"
-     groupId="org.lucee" artifactId="lucee.wartemplate" version="${version}" name="lucee.wartemplate" />
+     groupId="org.lucee" artifactId="lucee.wartemplate" version="${number}" name="lucee.wartemplate" />
     <delete file="${temp.dir}/lucee-wartemplate.zip" />
 
     <!-- main artifact, with main and optional dependencies (DB drivers are optional, etc.) -->
@@ -272,8 +250,8 @@
     <delete file="${basedir}/build-mvnlibs.xml"/>
     <!-- add the freshly built lucee-inst jar as a dependency -->
     <pom-and-deploy pomid="luceelibs.inst.pom" artifact="${dist.dir}/lucee-inst.jar" packaging="jar" buildtype="${mvn.type}"
-     groupId="org.lucee.lib" artifactId="lucee-inst" version="${version}" name="lucee-inst" />
-    <property name="depsxml" value='&lt;dependency groupId="org.lucee.lib" artifactId="lucee-inst" version="${version}${mvn.suffix}"/&gt;${line.separator}' />
+     groupId="org.lucee.lib" artifactId="lucee-inst" version="${number}" name="lucee-inst" />
+    <property name="depsxml" value='&lt;dependency groupId="org.lucee.lib" artifactId="lucee-inst" version="${number}${mvn.suffix}"/&gt;${line.separator}' />
     <!-- loop through all the jars and add them as dependencies -->
     <antcontrib:for param="file">
       <path>
@@ -319,7 +297,7 @@
   
   <target name="libs.zip" depends="core.artifact" description="builds the libs package">
     <!-- jars zip  -->
-    <zip destfile="${dist.dir}/bundles/lucee-${version}-jars.zip">
+    <zip destfile="${dist.dir}/bundles/lucee-${number}-jars.zip">
         <zipfileset dir="${dist.dir}" includes="lucee.jar"/>
         <zipfileset dir="${lib}" excludes="javax*servlet*.jar"/>    
     </zip>
@@ -328,25 +306,4 @@
   <target name="basic" depends="core.artifact" description="builds the core and the loader" >
   </target>
 
-  <target name="dummy" depends="init" description="generate the core dummy, used for the debug project to simulate a core bundle" >
-    <mkdir dir="${temp.dir}/dummy"/>
-    <!-- create the manifest file -->
-    <manifest file="${temp.dir}/MANIFEST.MF" mode="update">
-      <attribute name="Bundle-Version" value="${version}"/>
-      <attribute name="Bundle-Name" value="${bundleName}"/>
-      <attribute name="Bundle-SymbolicName" value="${bundleSymbolicName}"/>
-      <attribute name="Bundle-ManifestVersion" value="2"/>
-      <attribute name="Built-Date" value="${NOW}"/>
-      <attribute name="State" value="${state}"/>
-      <attribute name="Name" value="${name}"/>
-      <attribute name="Name-Explanation" value="${name.explanation}"/>
-    </manifest>
-    <!-- generates a jar from empty folder (only the manifest is necesary) -->
-    <jar 
-        basedir="${temp.dir}/dummy" 
-        jarfile="${srcDebug}/resource/lib/lucee-core-dummy.jar" 
-        manifest="${temp.dir}/MANIFEST.MF"/> 
-    <!-- clean up -->
-    <delete dir="${temp.dir}"/>
-  </target>
 </project>

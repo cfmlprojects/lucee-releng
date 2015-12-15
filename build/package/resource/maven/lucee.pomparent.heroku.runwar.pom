@@ -21,8 +21,7 @@
 						<phase>generate-sources</phase>
 						<configuration>
 							<tasks>
-								<echo file="${project.build.directory}/system.properties" message="java.runtime.version=1.7" />
-								<echo file="${project.build.directory}/Procfile"
+								<echo file="Procfile"
 									message="web: java $JAVA_OPTS -javaagent:target/lucee-inst.jar -jar target/runwar.jar --port $PORT --host 0.0.0.0 --background false -war target/${project.build.finalName}" />
                 <!--
 								<echo file="Procfile"
@@ -30,8 +29,6 @@
 								<echo file="Procfile"
 									message="web: java $JAVA_OPTS -javaagent:target/lucee-inst.jar -jar target/runwar.jar -p $PORT -b false -war target/${project.artifactId}-${project.version}" />
                 -->
-                <copy file="${project.build.directory}/Procfile" toFile="Procfile" overwrite="false" />
-                <copy file="${project.build.directory}/system.properties" toFile="system.properties" overwrite="false" />
 							</tasks>
 						</configuration>
 						<goals>

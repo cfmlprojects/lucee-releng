@@ -11,7 +11,7 @@
 
 	<target name="test.noxml">
 		<delete dir="${war.target.dir}" />
-		<unzip dest="${war.target.dir}" src="${dist.dir}/bundles/lucee-${version}.war" />
+		<unzip dest="${war.target.dir}" src="${dist.dir}/bundles/lucee-${number}.war" />
 		<mapping physical="${src.dir}/../tests" virtual="/tests"/>
 		<customtag physical="${src.dir}/../tests/jira" virtual="/tests/jira"/>
 		<lucee-datasource name="lucee_mirror" jdbcstring="jdbc:h2:${temp.dir}/h2dbs/lucee-db/lucee-db"/>
@@ -26,7 +26,7 @@
 	  <abspath path="${src.dir}" property="src.dir" />
 		<property file="${srcCore}/lucee/runtime/Info.ini" prefix="luceeini"/>
 		<antcontrib:var name="lucee.version" value="${luceeini.number}" />
-    <unzip dest="${war.target.dir}" src="${dist.dir}/bundles/lucee-${version}.war" />
+    <unzip dest="${war.target.dir}" src="${dist.dir}/bundles/lucee-${number}.war" />
 		<antcontrib:var name="extract.lucee.jar" value="${war.target.dir}" />
 		<antcontrib:var name="runwar.war.path" value="${war.target.dir}" />
 		<antcontrib:var name="server.sharedlibs" value="false" />
@@ -41,16 +41,14 @@
     <antcontrib:if>
       <equals arg1="snapshot" arg2="${mvn.type}" />
       <then>
-        <lucee-configure version="${version}-SNAPSHOT" war-dir="${war.target.dir}" />
+        <lucee-configure version="${number}-SNAPSHOT" war-dir="${war.target.dir}" />
       </then>
       <else>
-        <lucee-configure version="${version}" war-dir="${war.target.dir}" />
+        <lucee-configure version="${number}" war-dir="${war.target.dir}" />
       </else>
     </antcontrib:if>
     <echo file="${src.dir}/tests/HttpAntRunner.cfc"><![CDATA[<cfcomponent extends="mxunit.runner.HttpAntRunner"></cfcomponent>]]></echo>
     <dependency artifactId="testbox" groupId="com.ortussolutions" version="2.1.0" mapping="/testbox" />
-	  <dependency artifactId="mysql-connector-java-bin" groupId="org.lucee.lib" version="5.1.20" type="jar" dest="${war.target.dir}/WEB-INF/lib" />
-	  <dependency artifactId="postgresql" groupId="org.lucee.lib" version="9.1-901" type="jar" dest="${war.target.dir}/WEB-INF/lib" />
     <mapping physical="@ext.mappings.dir@/org.coldbox/testbox/2.1.0/system/testing/compat" virtual="/mxunit"/>
     <mapping physical="@src.dir@/tests" virtual="/lucee-tests" scmurl="@sc.lucee.http@"/>
     <mapping physical="@src.dir@/tests/testcases" virtual="/testcases" scmurl="@sc.lucee.http@"/>

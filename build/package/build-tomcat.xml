@@ -48,14 +48,10 @@
       java.opts="-Xms128m -Xmx256m -XX:MaxPermSize=64m" javaagent="${javaagent.rel}lucee-inst.jar"/>
 
   	<delete dir="${temp.tomcat.dir}/webapps" />
-  	<unzip src="${dist.dir}/bundles/lucee-${version}.war" dest="${temp.tomcat.dir}/webapps/ROOT/" />
-  	<move toDir="${temp.tomcat.dir}/lucee-server">
-  	  <fileset dir="${temp.tomcat.dir}/webapps/ROOT/lucee-server" />
-    </move>
-    
+  	<unzip src="${dist.dir}/bundles/lucee-${number}.war" dest="${temp.tomcat.dir}/webapps/ROOT/" />
 
   	<tomcat-configure-cfml home="${temp.tomcat.dir}"
-      cfengine.version="${version}-SNAPSHOT" 
+      cfengine.version="${number}-SNAPSHOT" 
   	  cfengine.lib.dir="${temp.luceetomcat.lib.dir}"
       cfengine.lib.src="${temp.tomcat.dir}/webapps/ROOT/WEB-INF/lib"/>
   	<delete dir="${temp.tomcat.dir}/webapps/ROOT/WEB-INF/lib" />

@@ -38,10 +38,10 @@
     <jetty-setenv home="${temp.jetty.dir}" jre.home="NOJRE"
       java.opts="-Xms128m -Xmx256m -XX:MaxPermSize=64m" javaagent="${javaagent.rel}/lucee-inst.jar"/>
     <delete dir="${jetty.dir}/webapps"/>
-  	<unzip src="${dist.dir}/bundles/lucee-${version}.war" dest="${jetty.dir}/webapps/root" />
+  	<unzip src="${dist.dir}/bundles/lucee-${number}.war" dest="${jetty.dir}/webapps/root" />
 
   	<jetty-configure-cfml home="${temp.jetty.dir}"
-     cfengine.version="${version}-SNAPSHOT" cfengine.lib.dir="${temp.luceejetty.lib.dir}"
+     cfengine.version="${number}-SNAPSHOT" cfengine.lib.dir="${temp.luceejetty.lib.dir}"
      cfengine.lib.src="${jetty.dir}/webapps/root/WEB-INF/lib"/>
     <delete dir="${jetty.dir}/webapps/root/WEB-INF/lib" />
     <jetty-ctl-win-unix jetty-dir-rel="jetty/" stop-port="8887"

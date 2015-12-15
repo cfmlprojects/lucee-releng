@@ -8,12 +8,12 @@
     <mkdir dir="${rpm.repo}" />
     <delete dir="${rpm.content}" />
     <mkdir dir="${rpm.content}" />
-    <echo message="Making rpm in ${rpm.repo} Packager:${packager.name} ${packager.email} Version: ${version}" />
+    <echo message="Making rpm in ${rpm.repo} Packager:${packager.name} ${packager.email} Version: ${number}" />
   	<unzip src="${installer.dist.dir}/lucee-tomcat-modcfml-${lucee.build.version.long}.zip"
   	 dest="${rpm.content}"/>
     <rpm-create rpm.repo="${rpm.repo}" rpm.release="1"
       rpm.reponame="cfmlprojects" rpm.baseurl="http://cfmlprojects.org/artifacts/RPMS/noarch"
-      rpm.group="org.lucee" rpm.name="lucee-tomcat-${installer.bittype}" rpm.version="${version}"
+      rpm.group="org.lucee" rpm.name="lucee-tomcat-${installer.bittype}" rpm.version="${number}"
       rpm.packager="${packager.name} ${packager.email}"
       rpm.url="http://lucee.org" failonerror="${build.rpm.failonerror}"
       rpm.keyring="${cfmlprojects.sign.keyring}" rpm.key="${cfmlprojects.sign.key.id}" 

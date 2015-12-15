@@ -49,9 +49,6 @@
 
   	<delete dir="${temp.tomcat.dir}/webapps" />
   	<unzip src="${dist.dir}/bundles/lucee-${version}.war" dest="${temp.tomcat.dir}/webapps/ROOT/" />
-  	<move toDir="${temp.tomcat.dir}/lucee-server">
-  	  <fileset dir="${temp.tomcat.dir}/webapps/ROOT/lucee-server" />
-    </move>
     
 
   	<tomcat-configure-cfml home="${temp.tomcat.dir}"

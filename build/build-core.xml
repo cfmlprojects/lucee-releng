@@ -49,7 +49,32 @@
     </sequential>
   </macrodef>
 	
+  <target name="instrumentation.compile" description="copy non java files" >
+    <property name="srcInst" location="${src.dir}/instrumentation/src/main/java"/> 
+    <!-- set class path for the compiler -->
+    <mvn-get-deps scope="runtime" todir="${temp.dir}/libs" pomfile="${src.dir}/loader/pom.xml" />
+    <path id="classpath">
+      <fileset dir="${temp.dir}/libs">
+        <include name="**/*.jar" />
+      </fileset>
+    </path>
+    <!-- compile inst source to temp directory -->
+    <javac-ecj srcdir="${srcInst}" destdir="${temp.dir}/inst" 
+      compliance="${lucee.javac.compiler}" classpath="${toString:classpath}"
+      encoding="ISO-8859-1" fork="true" maxmemory="512m" />
+    <!-- build the inst jar -->
+    <jar 
+      jarfile="${dist.dir}/lucee-inst.jar" basedir="${temp.dir}/inst"  manifest="${srcInst}/META-INF/MANIFEST.MF">
+      <manifest>
+        <attribute name="Built-Date" value="${NOW}"/>
+      </manifest>
+    </jar>
+  </target>
+  
   <target name="loader.compile" description="copy none java files" depends="exists.src.xml">
+    <antcontrib:var name="luceeinfo" unset="true" />
+    <xmlproperty file="${src.dir}/loader/pom.xml" prefix="luceeinfo" keeproot="false" />
+    <version-splitter property="lucee.build.version" version="${luceeinfo.version}" bump=""/>
     <maven-run basedir="${src.dir}/loader"
        options="-Dbuild.type=${build.type} -Dtestcases=false"
        goal="clean verify"
@@ -57,7 +82,7 @@
      <echo message="${maven.build.result}" />
   </target>
 
-	<target name="core.artifact" depends="loader.compile" description="create core artifact">
+	<target name="core.artifact" depends="loader.compile,instrumentation.compile" description="create core artifact">
     <pom-and-deploy pomid="lucee" artifact="${src.dir}/loader/target/lucee-${luceeinfo.version}.jar" packaging="jar" buildtype="${mvn.type}"
     groupId="org.lucee" artifactId="lucee" version="${lucee.build.version.long}" name="lucee" />
 

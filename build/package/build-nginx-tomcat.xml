@@ -160,12 +160,12 @@
             export NGINX_HOME="$SCRIPT_DIR/nginx"
             onINT() {
               "$CATALINA_HOME/bin/"shutdown.sh
-              "$NGINX_HOME/"nginx-ctl stop
+              "$NGINX_HOME/"lucee-nginx-ctl stop
               exit $?
             }
             trap "onINT" HUP INT QUIT ABRT KILL ALRM TERM TSTP
             . "$CATALINA_HOME/bin/"catalina.sh start
-            "$NGINX_HOME/"nginx-ctl start;
+            "$NGINX_HOME/"lucee-nginx-ctl start;
             wait `cat $CATALINA_PID`
             trap - HUP INT QUIT ABRT KILL ALRM TERM TSTP
           </option>

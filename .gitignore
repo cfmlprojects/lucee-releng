@@ -1,0 +1,5 @@
+dist/
+server/
+temp/
+src/
+build/jmimemagic.log

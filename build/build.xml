@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project default="all" basedir="." name="Lucee">
+
+  <property name="project.dir" location="../"/>
+
+  <!-- set global properties for this build -->
+  <property file="build.properties"/>
+  <property name="src.dir.abs" location="${src.dir}" />
+  <!-- import all the macrodefs and whatnot -->
+  <import file="${cfdistro.build.file}"/>
+
+  <import file="build-core.xml"/>
+  <import file="build-package.xml"/>
+  <import file="build-test.xml"/>
+
+  <target name="info" description="outputs information about all posible building options">
+    <echo>You have the following building options, call:</echo>
+    <echo>   "ant all" to build Lucee itself and all possible bundles</echo>
+    <echo>   "ant core" to build only Lucee itself</echo>
+    <echo>   "ant war" to build war and libs zip</echo>
+    <echo>   "ant standard" to build Lucee itself and standard tomcat bundles</echo>
+    <echo>   "ant stack" to build Lucee itself and NGINX tomcat stack bundles</echo>
+    <echo>   "ant ci" to build Lucee war, run tests, and create maven pom parents</echo>
+  </target>
+
+  <target name="core" depends="basic" description="build only Lucee itself"></target>
+  <target name="war" depends="core, war.artifact" description="build war and lib bundles"></target>
+  <target name="standard" depends="lucee.tomcat.artifacts" description="builds the standard tomcat packages"></target>
+  <target name="stack" depends="standard, lucee.nginx.tomcat.artifacts" description="builds the nginx stack"></target>
+  <target name="jetty" depends="lucee.jetty.artifacts" description="builds the jetty packages"></target>
+  <target name="express" depends="standard" description="builds express bundles"></target>
+  <target name="rpm" depends="build.lucee.rpm.jre" description="builds redhat RPM bundles"></target>
+  <target name="deb" depends="build.lucee.deb" description="builds debian bundles"></target>
+  <target name="poms" depends="war,build.pomparents" description="war, test, make parent poms for maven"></target>
+  <target name="ci" depends="war,test,poms" description="war, test, make parent poms for maven"></target>
+  <target name="all" depends="stack, jetty, poms, build.docs, rpm, deb" description="builds ALL bundles"></target>
+ 
+</project>

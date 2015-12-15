@@ -1,0 +1,120 @@
+<project name="LuceeTest" default="test" basedir="." xmlns:antcontrib="antlib:net.sf.antcontrib">
+    
+	<description>Ant build file to test Lucee builds</description>
+
+	<!-- Load properties -->
+	<property file="build.properties"/>
+  <import file="build-package.xml"/>
+	
+	<target name="build.and.test" depends="war.zip,test">
+	</target>
+
+	<target name="test.noxml">
+		<delete dir="${war.target.dir}" />
+		<unzip dest="${war.target.dir}" src="${dist.dir}/bundles/lucee-${version}.war" />
+		<mapping physical="${src.dir}/../tests" virtual="/tests"/>
+		<customtag physical="${src.dir}/../tests/jira" virtual="/tests/jira"/>
+		<lucee-datasource name="lucee_mirror" jdbcstring="jdbc:h2:${temp.dir}/h2dbs/lucee-db/lucee-db"/>
+		<server-run>
+			<!-- <antcontrib:runtarget target="server.openUrl"/> -->
+			<get src="${server.url}" dest="${tests.dir}/results/jira.html" verbose="true" ignoreerrors="false" retries="0" maxtime="777" />
+		</server-run>
+	</target>
+	
+	<target name="tests.init">
+    <delete dir="${war.target.dir}" />
+	  <abspath path="${src.dir}" property="src.dir" />
+		<property file="${srcCore}/lucee/runtime/Info.ini" prefix="luceeini"/>
+		<antcontrib:var name="lucee.version" value="${luceeini.number}" />
+    <unzip dest="${war.target.dir}" src="${dist.dir}/bundles/lucee-${version}.war" />
+		<antcontrib:var name="extract.lucee.jar" value="${war.target.dir}" />
+		<antcontrib:var name="runwar.war.path" value="${war.target.dir}" />
+		<antcontrib:var name="server.sharedlibs" value="false" />
+		<antcontrib:var name="server.jvm.args" value="-Xms256M -Xmx326M -XX:PermSize=128M -XX:MaxPermSize=128M  -Djava.net.preferIPv4Stack=true" />
+		<antcontrib:var name="lucee.config.file" value="${war.target.dir}/WEB-INF/lucee/lucee-web.xml.cfm" />
+		<antcontrib:var name="lucee.web.config.dir" value="${war.target.dir}/WEB-INF/lucee" />
+		<antcontrib:var name="lucee.web.config.file" value="${war.target.dir}/WEB-INF/lucee/lucee-web.xml.cfm" />
+		<antcontrib:var name="lucee.server.config.dir" value="${war.target.dir}/WEB-INF/lib/lucee-server" />
+		<antcontrib:var name="lucee.server.config.file" value="${lucee.server.config.dir}/context/lucee-server.xml" />
+		<antcontrib:var name="cfadmin.password" value="server" />
+		<antcontrib:var name="cfml.request.timeout" value="30" />
+    <antcontrib:if>
+      <equals arg1="snapshot" arg2="${mvn.type}" />
+      <then>
+        <lucee-configure version="${version}-SNAPSHOT" war-dir="${war.target.dir}" />
+      </then>
+      <else>
+        <lucee-configure version="${version}" war-dir="${war.target.dir}" />
+      </else>
+    </antcontrib:if>
+    <echo file="${src.dir}/tests/HttpAntRunner.cfc"><![CDATA[<cfcomponent extends="mxunit.runner.HttpAntRunner"></cfcomponent>]]></echo>
+    <dependency artifactId="testbox" groupId="com.ortussolutions" version="2.1.0" mapping="/testbox" />
+	  <dependency artifactId="mysql-connector-java-bin" groupId="org.lucee.lib" version="5.1.20" type="jar" dest="${war.target.dir}/WEB-INF/lib" />
+	  <dependency artifactId="postgresql" groupId="org.lucee.lib" version="9.1-901" type="jar" dest="${war.target.dir}/WEB-INF/lib" />
+    <mapping physical="@ext.mappings.dir@/org.coldbox/testbox/2.1.0/system/testing/compat" virtual="/mxunit"/>
+    <mapping physical="@src.dir@/tests" virtual="/lucee-tests" scmurl="@sc.lucee.http@"/>
+    <mapping physical="@src.dir@/tests/testcases" virtual="/testcases" scmurl="@sc.lucee.http@"/>
+    <lucee-datasource name="lucee_mirror" jdbcstring="jdbc:h2:${temp.dir}/h2dbs/lucee-db/lucee-db" />
+    <lucee-datasource name="mysql" jdbcstring="jdbc:mysql://127.0.0.1:3306/luceetest" username="luceetest" password="${dsn.lucee.mysql.password}"/>
+    <sql onerror="continue" failOnConnectionError="false"
+      driver="org.gjt.mm.mysql.Driver"
+      url="jdbc:mysql://127.0.0.1:3306"
+      userid="${dsn.lucee.mysql.username}"
+      password="${dsn.lucee.mysql.password}">
+      <classpath><path refid="data.lib.path"/></classpath>
+      DROP DATABASE IF EXISTS luceetest;
+      CREATE DATABASE luceetest;
+    </sql>
+	  <lucee-datasource name="postgre" jdbcstring="jdbc:postgresql://127.0.0.1:5432/luceetest" username="luceetest" password="${dsn.lucee.postgre.password}"/>
+    <sql onerror="continue" failOnConnectionError="false"
+      driver="org.postgresql.Driver" autocommit="true"
+      url="jdbc:postgresql://127.0.0.1:5432/template1"
+      userid="${dsn.lucee.postgre.username}"
+      password="${dsn.lucee.postgre.password}">
+      <classpath><path refid="data.lib.path"/></classpath>
+      DROP DATABASE IF EXISTS luceetest;
+      CREATE DATABASE luceetest;
+    </sql>
+		<lucee-cache name="jira2623" storage="true" default-type="default-object" custom="${cache.props}" class="lucee.runtime.cache.eh.EHCache"/>
+		<copy file="${basedir}/resource/tboxrunner.cfm" todir="${war.target.dir}"/>
+	</target>
+
+	<target name="test.runserver" depends="tests.init">
+		<antcontrib:runtarget target="server.start.fg" />
+	</target>
+	
+	<target name="test" depends="tests.init">
+		<server-run>
+			<!--
+			<mxunit-call 
+				path="${mxunit.tests.dir}" componentPath="${mxunit.componentpath}"
+				packageName="testcases" recurse="${mxunit.recurse}"
+				outputdir="${mxunit.tests.results.dir}" failonerror="${mxunit.failonerror}" 
+				defaultrunner="/lucee-tests/HttpAntRunner.cfc" inspect="true"
+			/>
+			<testbox-rundirs basePath="${tests.dir}" componentPath="testcases"
+				runner="http://${runwar.host}:${runwar.port}/tboxrunner.cfm?" outputdir="${dist.dir}/testresults/"/>
+			-->
+			<testbox-call path="${tests.dir}" componentPath="testcases" inspect="true"
+				runner="http://${runwar.host}:${runwar.port}/tboxrunner.cfm?luceeversion=${lucee.build.version.long}&amp;" outputdir="${dist.dir}/testresults/"/>
+		</server-run>
+	</target>
+	
+	<target name="build.and.loadtest" depends="build,loadtest">
+	</target>
+
+	<target name="loadtest">
+    <server-run>
+			<antcontrib:runtarget target="jmeter.run.and.report"/>
+    </server-run>
+	</target>
+	
+	<target name="loadtest.running">
+		<antcontrib:runtarget target="jmeter.runtests"/>
+	</target>
+
+	<target name="build">
+		<antcontrib:runtarget target="luceebuild.build"/>
+	</target>
+
+</project>

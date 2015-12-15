@@ -1,0 +1,51 @@
+<project name="build-docs" default="build.docs" xmlns:antcontrib="antlib:net.sf.antcontrib" basedir=".">
+
+  <target name="build.docs">
+    <property name="javadoc.dir" value="${dist.dir}/docs/api" />
+    <property name="javadoc.linksource" value="true" />
+    <echo>*************************************</echo>
+    <echo>***** Generating Lucee JavaDoc ******</echo>
+    <echo>*************************************</echo>
+    <echo>JavaDoc dir: ${javadoc.dir}</echo>
+    <delete dir="${javadoc.dir}" />
+    <javadoc packagenames="lucee.*"
+          access="public"
+          destdir="${javadoc.dir}"
+          author="true"
+          version="true"
+          use="true"
+          maxmemory="512m" 
+          linksource="true"
+          classpath="${toString:classpath}"
+          windowtitle="Lucee API">
+      <doctitle><![CDATA[Lucee High Performance CFML Engine API Reference (${lucee.build.version.long})]]></doctitle>
+      <bottom><![CDATA[<i>Copyright &#169; 2015 Lucee</i>]]></bottom>
+    <group title="lucee.loader" packages="lucee.loader*"/>
+    <group title="lucee.commons" packages="lucee.commons*"/>
+    <group title="lucee.runtime" packages="lucee.runtime*"/>
+    <group title="lucee.transformer" packages="lucee.transformer*"/>
+    <group title="lucee.intergral" packages="lucee.intergral*"/>
+    <packageset dir="${srcLoader}/" defaultexcludes="yes" />
+    <packageset dir="${srcCore}/" defaultexcludes="yes" />
+    <link href="http://docs.oracle.com/javase/7/docs/api/"/>
+  </javadoc>
+  <copy todir="${javadoc.dir}" overwrite="true" description="javadoc template">
+    <fileset dir="${basedir}/package/resource/javadoc/" />
+  </copy>
+
+  <zip destfile="${dist.dir}/docs/${lucee.build.version.long}-doc.zip" update="false">
+    <zipfileset dir="${dist.dir}/docs/api" prefix="docs/api"/>
+  </zip>
+  <pom-and-deploy pomid="lucee.core.pom" packaging="jar" artifact="${dist.dir}/lucee.jar" buildtype="${mvn.type}"
+     groupId="org.lucee" artifactId="lucee.core" version="${lucee.build.version.long}" name="lucee.core">
+    <dependencies>
+      <dependency groupId="org.lucee" artifactId="lucee.libs" version="${version}" type="zip"/>
+    </dependencies>
+    <attachments>
+      <attach file="${dist.dir}/${lucee.build.version.long}.lco" type="lco"/>
+      <attach file="${dist.dir}/docs/${lucee.build.version.long}-doc.zip" type="zip" classifier="javadoc" />
+    </attachments>
+  </pom-and-deploy>
+</target>
+
+</project>

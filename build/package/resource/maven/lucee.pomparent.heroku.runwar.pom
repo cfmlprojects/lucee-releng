@@ -1,0 +1,45 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.lucee</groupId>
+	<artifactId>lucee.pomparent.heroku.runwar</artifactId>
+	<packaging>pom</packaging>
+  <version>${lucee.poms.version}</version>
+	<name>lucee Heroku Runwar Pomparent</name>
+	<parent>
+		<groupId>org.lucee</groupId>
+		<artifactId>lucee.pomparent.runwar</artifactId>
+    <version>${lucee.poms.version}</version>
+	</parent>
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>1.3</version>
+				<executions>
+					<execution>
+						<phase>generate-sources</phase>
+						<configuration>
+							<tasks>
+								<echo file="${project.build.directory}/system.properties" message="java.runtime.version=1.7" />
+								<echo file="${project.build.directory}/Procfile"
+									message="web: java $JAVA_OPTS -javaagent:target/lucee-inst.jar -jar target/runwar.jar --port $PORT --host 0.0.0.0 --background false -war target/${project.build.finalName}" />
+                <!--
+								<echo file="Procfile"
+									message="web: java $JAVA_OPTS -javaagent:target/lucee-inst.jar -jar target/runwar.jar -p $PORT -b false -war target/${project.build.finalName}.${project.packaging}" />
+								<echo file="Procfile"
+									message="web: java $JAVA_OPTS -javaagent:target/lucee-inst.jar -jar target/runwar.jar -p $PORT -b false -war target/${project.artifactId}-${project.version}" />
+                -->
+                <copy file="${project.build.directory}/Procfile" toFile="Procfile" overwrite="false" />
+                <copy file="${project.build.directory}/system.properties" toFile="system.properties" overwrite="false" />
+							</tasks>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project default="build.lucee.deb" basedir="." name="LuceeDeb" xmlns:antcontrib="antlib:net.sf.antcontrib">
+
+  <import file="build-tomcat.xml"/>
+
+  <target name="build.lucee.deb" depends="lucee.tomcat" description="builds a .deb file for debian-based systems">
+    <echo message="Creating debian .deb file from: ${dist.dir}"/>
+    <property name="deb.repo" value="${cfdistro.basedir}/artifacts/debs/noarch" />
+    <mkdir dir="${deb.repo}"/>
+    <delete file="${dist.dir}/lucee-tomcat-nojre_${version}-1_all.deb" />
+    <taskdef-dependency name="debtask" classname="debrepo.ant.DebTask" artifactId="debrepo" groupId="org.cfmlprojects" version="1.0.0" />
+    <debtask
+        todir="${dist.dir}"
+        package="lucee-tomcat-nojre"
+        section="web"
+        depends="java-common"
+        key="${cfmlprojects.sign.key.id}" passphrase="${cfmlprojects.sign.key.passphrase}"
+        keyring="${cfmlprojects.sign.keyring}">
+        <version upstream="${version}"/>
+        <maintainer name="${packager.name}" email="${packager.email}"/>
+        <description synopsis="Railo CFML Engine">Lucee is a high performance CFML engine.  Version: ${version}.</description>
+      <tarfileset dir="${temp.package.dir}" prefix="opt/lucee" excludes="start*, stop*" />
+      <tarfileset file="${temp.package.dir}/start*" prefix="opt/lucee" filemode="755"/>
+      <tarfileset file="${temp.package.dir}/stop*" prefix="opt/lucee" filemode="755"/>
+    </debtask>
+    <echo message="Updating apt (deb) repo in ${deb.repo}"/>
+    <copy file="${dist.dir}/lucee-tomcat-nojre_${version}-1_all.deb" todir="${deb.repo}" />
+    <deb-repo dir="${deb.repo}"
+      label="cfmlprojects" description="cfmlprojects.org debian repository"
+      key="${cfmlprojects.sign.key.id}" passphrase="${cfmlprojects.sign.key.passphrase}"
+      keyring="${cfmlprojects.sign.keyring}" />
+  </target>
+
+</project>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<src>
+	<project>
+<!--
+          <src branch="@sc.releng.branch@" dest="../" user="" password="" 
+          remote="@sc.releng.remote@" type="git" uri="@sc.releng.uri@"/>
+ -->
+         <src branch="@sc.lucee.branch@" dest="@sc.lucee.dest@" password="" 
+          remote="@sc.lucee.remote@" type="git" uri="@sc.lucee.uri@" user=""/>
+	</project>
+	<sources>
+	<!-- 
+    <src dest="@wiki.dir@/" password="" type="git" uri="https://github.com/denuno/railo-build.wiki.git" user=""/>
+		<src dest="@src.dir@/../build/CFML-Installers" type="git" 
+		uri="git://github.com/utdream/CFML-Installers.git"
+		user="" password="" branch="origin/master"/>
+ 	-->
+	</sources>
+</src>

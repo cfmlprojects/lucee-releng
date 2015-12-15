@@ -1,0 +1,15 @@
+<project name="lucee.package" default="war.zip" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
+
+	<loadproperties srcfile="build-package.properties"/>
+	<property name="package.resource.dir" location="${basedir}/package/resource"/>
+
+	<import file="package/build-war.xml"/>
+  <import file="package/build-tomcat.xml"/>
+  <import file="package/build-nginx-tomcat.xml"/>
+  <import file="package/build-jetty.xml"/>
+  <import file="package/build-deb.xml"/>
+  <import file="package/build-poms.xml"/>
+  <import file="package/build-rpm.xml"/>
+  <import file="package/build-docs.xml"/>
+    
+</project>

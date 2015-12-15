@@ -1,0 +1,85 @@
+  <!-- ===================================================================  -->
+  <!-- Invoke the lucee Servlet                                             -->
+  <!-- ===================================================================  -->
+	<servlet xmlns="http://java.sun.com/xml/ns/javaee">
+	    <servlet-name>GlobalCFMLServlet</servlet-name>
+	    <description>CFML runtime Engine</description>
+	    <servlet-class>lucee.loader.servlet.CFMLServlet</servlet-class>   
+      <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+      <!-- to specify the location of the Lucee Server config and libraries,   -->
+      <!-- uncomment the init-param below.  make sure that the param-value     -->
+      <!-- points to a valid folder, and that the process that runs Lucee has  -->
+      <!-- write permissions to that folder.  leave commented for defaults.    -->
+      <!--
+      <init-param>
+        <param-name>lucee-server-directory</param-name>
+        <param-value>/var/Lucee/config/server/</param-value>
+        <description>Lucee Server configuration directory (for Server-wide configurations, settings, and libraries)</description>
+      </init-param>
+      !-->
+      <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+      <!-- to specify the location of the Web Contexts' config and libraries,  -->
+      <!-- uncomment the init-param below.  make sure that the param-value     -->
+      <!-- points to a valid folder, and that the process that runs Lucee has  -->
+      <!-- write permissions to that folder.  the {web-context-label} can be   -->
+      <!-- set in Lucee Server Admin homepage.  leave commented for defaults.  -->
+      <!--
+      <init-param>
+        <param-name>lucee-web-directory</param-name>
+        <param-value>/var/Lucee/config/web/{web-context-label}/</param-value>
+        <description>Lucee Web Directory (for Website-specific configurations, settings, and libraries)</description>
+      </init-param>
+      !-->
+	    <load-on-startup>1</load-on-startup>
+	</servlet>
+
+	<servlet xmlns="http://java.sun.com/xml/ns/javaee">
+	    <servlet-name>GlobalAMFServlet</servlet-name>
+	    <description>AMF Servlet for flash remoting</description>
+	    <servlet-class>lucee.loader.servlet.AMFServlet</servlet-class>
+	    <load-on-startup>2</load-on-startup>
+	</servlet>
+
+	<servlet xmlns="http://java.sun.com/xml/ns/javaee">
+	    <servlet-name>GlobalRestServlet</servlet-name>
+	    <description>Servlet to access REST service</description>
+	    <servlet-class>lucee.loader.servlet.RestServlet</servlet-class>
+	    <init-param>
+		<param-name>lucee-web-directory</param-name> 
+		<param-value>{web-root-directory}/WEB-INF/lucee/</param-value> 
+		<description>lucee Web Directory directory</description> 
+	    </init-param>	
+	    <!-- init-param>
+		<param-name>lucee-server-directory</param-name>
+		<param-value>./</param-value>
+		<description>directory where lucee root directory is stored</description>
+	    </init-param -->
+	    <load-on-startup>1</load-on-startup>
+	</servlet>
+
+
+    <!-- Mappings for the lucee servlet -->
+    <servlet-mapping xmlns="http://java.sun.com/xml/ns/javaee">
+        <servlet-name>GlobalCFMLServlet</servlet-name>
+        <url-pattern>*.cfm</url-pattern>
+        <url-pattern>*.cfml</url-pattern>
+        <url-pattern>*.cfc</url-pattern>
+	<!-- Basic SES Mappings -->
+        <url-pattern>/index.cfm/*</url-pattern>
+        <url-pattern>/default.cfm/*</url-pattern>
+        <url-pattern>/post.cfm/*</url-pattern>
+        <url-pattern>/archive.cfm/*</url-pattern>
+        <url-pattern>/blog.cfm/*</url-pattern>
+        <url-pattern>/page.cfm/*</url-pattern>
+        <url-pattern>/rewrite.cfm/*</url-pattern>
+    </servlet-mapping>
+    <!-- mappings for remoting with lucee -->
+    <servlet-mapping xmlns="http://java.sun.com/xml/ns/javaee">
+        <servlet-name>GlobalAMFServlet</servlet-name>
+        <url-pattern>/flashservices/gateway/*</url-pattern>
+    </servlet-mapping>
+    <!-- mapping for lucee's REST servlet -->
+    <servlet-mapping xmlns="http://java.sun.com/xml/ns/javaee">
+        <servlet-name>GlobalRestServlet</servlet-name>
+        <url-pattern>/rest/*</url-pattern>
+    </servlet-mapping>

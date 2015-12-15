@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project default="basic" basedir="." name="LuceeContext" xmlns:antcontrib="antlib:net.sf.antcontrib">
+  <description>
+    Build Lucee context LAR file
+  </description>
+
+  <import file="build-core.xml"/>
+  
+  <target name="lucee.tempwar" description="Creates a temp war for building admin." depends="loader.jar">
+    <delete dir="${war.target.dir}"/>
+    <mkdir dir="${war.target.dir}/WEB-INF/lib"/>
+    <!-- copy the WAR template, css, etc. -->
+    <copy todir="${war.target.dir}">
+      <fileset dir="${resource.dir}/war"/>
+    </copy>
+    <copy todir="${war.target.dir}/WEB-INF/lib">
+      <fileset dir="${dist.dir}" includes="lucee.jar,lucee-inst.jar"/>
+      <fileset dir="${lib}" excludes=".classpath,.project,javax*servlet*.jar"/>    
+      <fileset dir="${lib}" includes="*felix*.jar"/>    
+    </copy>
+    <copy todir="${war.target.dir}/lucee-server/bundles">
+      <fileset dir="${lib}" excludes=".classpath,.project,javax*servlet*.jar,*felix*.jar"/>
+    </copy>
+    <copy todir="${war.target.dir}/lucee-server/context">
+      <fileset dir="${src.dir}/source/cfml/context/"/>    
+    </copy>
+    <!--
+    <copy file="${dist.dir}/${version}.lco" toFile="${war.target.dir}/core.lco"/>
+    <delete file="${war.target.dir}/lucee-context.lar" />
+    <zip destfile="${war.target.dir}/lucee-context.lar">
+      <zipfileset dir="${src.dir}/source/cfml/context" prefix="" />
+    </zip>
+    <zip destfile="${war.target.dir}/core.lco" update="true" duplicate="preserve">
+      <zipfileset file="${war.target.dir}/lucee-context.lar" prefix="resource/context/" />
+    </zip>
+    <zip destfile="${war.target.dir}/WEB-INF/lib/lucee.jar" update="true" duplicate="preserve">
+      <zipfileset file="${war.target.dir}/core.lco" prefix="core" />
+    </zip>
+    -->
+    <copy file="${srcCore}/resource/config/server.xml" 
+      toFile="${war.target.dir}/WEB-INF/lib/lucee-server/context/lucee-server.xml"/>
+    <copy file="${srcCore}/resource/config/web.xml" 
+      toFile="${war.target.dir}/WEB-INF/lucee/lucee-web.xml.cfm"/>
+    <mapping physical="${src.dir}/source/cfml" virtual="/lucee-cfml"/>
+    <mapping physical="${war.target.dir}/WEB-INF/lib/lucee-server/context/" virtual="/lucee"/>
+    <lucee-password server-password="${cfadmin.password}" web-password="${cfadmin.password}" />
+  </target>
+  
+  <target name="lucee.context" depends="lucee.tempwar" description="Create the lucee-context.lar">
+    <property name="context.src.dir" location="${src.dir}/source/cfml/context"/>
+    <property name="context.lar.file" location="${dist.dir}/lucee-context.lar"/>
+    <delete file="${context.lar.file}" />
+    <replace-windows-slashes input="${context.src.dir}" property="context.src.dir" />
+    <property name="server.memory.max" value="64M"/>
+    <property name="background" value="true" />
+    <antcontrib:var name="runwar.port" value="0" />
+    <antcontrib:var name="runwar.stop.socket" value="0" />
+    <echo file="${war.target.dir}/compileAdmin.cfm">
+      <![CDATA[<cftry><cfsetting enablecfoutputonly="true"/>
+      <cfset virtualPath = "/lucee-context-compiled">
+      <cfadmin action="updateMapping" type="web" password="#url.password#"
+          virtual="#virtualPath#" physical="#url.admin_source#" primary="physical" trusted="false" archive="">
+      <cfadmin action="createArchive" type="web" password="#url.password#" addNonCFMLFiles="true"
+              virtual="#virtualPath#" file="#url.lar_file#" addCFMLFiles="false" append="false">
+      <cfcatch type="Any">
+        <cfoutput>Mapping not created. Error occured. (#cfcatch.message#)</cfoutput><cfabort>
+      </cfcatch>
+      </cftry><cfoutput>lucee Admin compiled to #url.lar_file#</cfoutput>
+      ]]>
+    </echo>
+    <server-run timeout="120">
+      <echo>Compiling Railo Administrator</echo>
+      <antcontrib:urlencode name="admincfml.location" location="${context.src.dir}" />
+      <!-- after server-run, runwar.port will be the random port used, so set the url now -->
+      <property name="build.context.url" value="http://${server.host}:${runwar.port}/compileAdmin.cfm" />
+      <echo>trying to get ${build.context.url}?password=${cfadmin.password}&amp;admin_source=${admincfml.location}&amp;lar_file=${context.lar.file}</echo>
+      <get src="${build.context.url}?password=${cfadmin.password}&amp;admin_source=${admincfml.location}&amp;lar_file=${context.lar.file}" verbose="on" dest="${temp.dir}/generate.html"/>
+    </server-run>
+    <loadfile property="build.context.compile_message" srcFile="${temp.dir}/generate.html" />
+    <antcontrib:propertyregex override="yes" property="build-core.generate.error" input="${build.context.compile_message}" regexp=".*rror(.+).*" select="\1" />
+    <antcontrib:if>
+      <equals arg1="${build-core.generate.error}" arg2="$${build-core.generate.error}"/>
+      <then/>
+      <else>
+        <fail message="Error generating admin! Message from railo: Error${build-core.generate.error}" />
+      </else>
+    </antcontrib:if>
+    <echo>Message from Lucee: ${build.context.compile_message}</echo>
+    <echo>Admin compiled to: ${context.lar.file}</echo>
+  </target>
+  
+
+</project>

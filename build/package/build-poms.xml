@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="." name="LuceeArtifact" xmlns:antcontrib="antlib:net.sf.antcontrib">
+  <description>
+    Lucee Artifacts
+  </description>
+
+  <import file="../build-core.xml"/>
+
+<!--
+  <target name="build.pomparents" depends="core.artifact" description="add build artifacts to artifact repo">
+-->
+  <target name="build.pomparents" description="add build artifacts to artifact repo">
+    <!-- deploy the archtype-ish projects for things like heroku -->
+    <property name="lucee.poms.version" value="1.5.0" />
+    <copy toDir="${temp.dir}" overwrite="true">
+      <fileset dir="${basedir}/package/resource/maven/" includes="*.pom" />
+      <filterchain><expandproperties /></filterchain>
+    </copy>
+    <pom-and-deploy pomid="lucee.pomparent.pom" file="${temp.dir}/lucee.pomparent.pom"  packaging="pom" buildtype="${mvn.type}"
+      artifact="${dist.dir}/lucee.jar"/>
+    <pom-and-deploy pomid="rail.pomparent.libs.pom" file="${temp.dir}/lucee.pomparent.libs.pom"  packaging="pom" buildtype="${mvn.type}"
+      artifact="${dist.dir}/lucee.jar"/>
+    <pom-and-deploy pomid="lucee.pomparent.war.pom" file="${temp.dir}/lucee.pomparent.war.pom" buildtype="${mvn.type}"
+      artifact="${dist.dir}/lucee.jar" packaging="pom" />
+    <pom-and-deploy pomid="lucee.pomparent.jetty.pom" file="${temp.dir}/lucee.pomparent.jetty.pom" packaging="pom"
+      artifact="${dist.dir}/lucee.jar" buildtype="${mvn.type}" />
+    <pom-and-deploy pomid="lucee.pomparent.runwar.pom" file="${temp.dir}/lucee.pomparent.runwar.pom" packaging="pom"
+      artifact="${dist.dir}/lucee.jar" buildtype="${mvn.type}" />
+    <pom-and-deploy pomid="lucee.pomparent.winstone.pom" file="${temp.dir}/lucee.pomparent.winstone.pom" packaging="pom"
+      artifact="${dist.dir}/lucee.jar" buildtype="${mvn.type}" />
+    <pom-and-deploy pomid="lucee.pomparent.heroku.runwar.pom" file="${temp.dir}/lucee.pomparent.heroku.runwar.pom" packaging="pom"
+      artifact="${dist.dir}/lucee.jar" buildtype="${mvn.type}" />
+    <pom-and-deploy pomid="lucee.pomparent.heroku.jetty.pom" file="${temp.dir}/lucee.pomparent.heroku.jetty.pom" packaging="pom"
+      artifact="${dist.dir}/lucee.jar" buildtype="${mvn.type}" />
+    <pom-and-deploy pomid="lucee.pomparent.heroku.winstone.pom" file="${temp.dir}/lucee.pomparent.heroku.winstone.pom" packaging="pom"
+      artifact="${dist.dir}/lucee.jar" buildtype="${mvn.type}" />
+  </target>
+
+  <macrodef name="get-mvn-version" description="checks the hash to be sure a new jar wasn't added but not entered as dependency">
+    <attribute name="jar"/>
+    <attribute name="version.property"/>
+    <attribute name="name.property"/>
+    <sequential>
+      <antcontrib:var name="jarMD5" unset="true"/>
+      <antcontrib:var name="@{version.property}" unset="true"/>
+      <antcontrib:var name="@{name.property}" unset="true"/>
+      <checksum file="${lib}/@{jar}.jar" property="jarMD5"/>
+      <xmltask source="${basedir}/package/resource/maven/versions">
+        <copy path="/jars/jar[@hash='${jarMD5}']/@version" property="@{version.property}"/>
+        <copy path="/jars/jar[@hash='${jarMD5}']/@path" property="@{name.property}"/>
+      </xmltask>
+      <antcontrib:var name="jarname" unset="true" />
+      <basename file="${@{name.property}}" property="jarname" suffix=".jar" />
+      <antcontrib:var name="@{name.property}" value="${jarname}" />
+
+      <antcontrib:if>
+        <and>
+          <or>
+            <equals arg1="" arg2="${@{version.property}}" />
+            <equals arg1="$${@{version.property}}" arg2="${@{version.property}}" />
+          </or>
+          <not>
+            <equals arg1="@{jar}" arg2="lucee-inst" />
+          </not>
+        </and>
+        <then>
+        <fail message="no version info: @{jar}.jar ${jarMD5} ${@{version.property}}"/>
+        <!--
+        <property name="@{property}" value="${lucee.build.version.long}" />
+        <echo message="no version info: @{jar}.jar ${jarMD5}, using ${package.resource.dir} for version"/>
+        -->
+        </then>
+      </antcontrib:if>
+    </sequential>
+  </macrodef>
+
+  <!-- HISTORICAL -->
+
+  <target name="artifact.libs.deploy" description="add libs to artifact repo">
+    <property name="depsoptionalxml" value="" />
+    <delete file="${basedir}/build-mvnlibs.xml"/>
+    <!-- add the freshly built lucee-inst jar as a dependency -->
+    <pom-and-deploy pomid="luceelibs.inst.pom" artifact="${dist.dir}/lucee-inst.jar" packaging="jar" buildtype="release"
+     groupId="org.lucee.lib" artifactId="lucee-inst" version="${version}" name="lucee-inst" />
+    <property name="depsxml" value='&lt;dependency groupId="org.lucee.lib" artifactId="lucee-inst" version="${version}"/&gt;${line.separator}' />
+
+    <!-- loop through all the jars and add them as dependencies -->
+    <antcontrib:for param="file">
+      <path>
+        <fileset dir="${lib}" excludes="${lucee.deps.exclude},${lucee.deps.optional}" includes="*.jar" />
+      </path>
+      <sequential>
+        <antcontrib:var name="basename" unset="true" />
+        <basename file="@{file}" property="basename" suffix=".jar" />
+        <get-mvn-version jar="${basename}" version.property="__depVer" name.property="__depName" />
+        <antcontrib:propertyregex property="basename" input="${basename}" 
+         regexp="\." replace="-" global="true" override="yes"/>
+        <echo message="${basename} ${__depVer}"/>
+        <pom-and-deploy pomid="luceelibs.${basename}.pom" artifact="@{file}" packaging="jar" buildtype="release"
+         groupId="org.lucee.lib" artifactId="${__depName}" version="${__depVer}" name="${__depName}" />
+        <antcontrib:var name="depsxml"
+          value='${depsxml}&lt;dependency groupId="org.lucee.lib" artifactId="${__depName}" version="${__depVer}"/&gt;${line.separator}' />
+      </sequential>
+    </antcontrib:for>
+      <!-- add optional libs -->
+    <antcontrib:for param="file">
+      <path>
+        <fileset dir="${lib}" excludes="${lucee.deps.exclude}" includes="${lucee.deps.optional}" />
+      </path>
+      <sequential>
+        <antcontrib:var name="basename" unset="true" />
+        <basename file="@{file}" property="basename" suffix=".jar" />
+        <get-mvn-version jar="${basename}" version.property="__depVer" name.property="__depName" />
+        <antcontrib:propertyregex property="basename" input="${basename}" 
+         regexp="\." replace="-" global="true" override="yes"/>
+        <echo message="${__depName} ${__depVer}"/>
+        <pom-and-deploy pomid="luceelibs.${basename}.pom" artifact="@{file}" packaging="jar" buildtype="release"
+         groupId="org.lucee.lib" artifactId="${__depName}" version="${__depVer}" name="${__depName}" />
+        <antcontrib:var name="depsxml"
+          value='${depsxml}&lt;dependency groupId="org.lucee.lib" artifactId="${__depName}" version="${__depVer}" optional="true"/&gt;${line.separator}' />
+        <antcontrib:var name="depsoptionalxml"
+          value='${depsoptionalxml}&lt;dependency groupId="org.lucee.lib" artifactId="${__depName}" version="${__depVer}"/&gt;${line.separator}' />
+      </sequential>
+    </antcontrib:for>
+    <echo file="${basedir}/build-mvnlibs.xml"><![CDATA[<project><import file="${basedir}/build.xml"/>
+      <target name="libsxml.pom">
+      <pom-and-deploy pomid="lucee" artifact="${dist.dir}/lucee.jar" packaging="jar" buildtype="${mvn.type}"
+        groupId="org.lucee" artifactId="lucee" version="${lucee.build.version.long}" name="lucee">
+        <dependencies>${depsxml}</dependencies>
+      </pom-and-deploy>
+      <pom-and-deploy pomid="lucee.optional" packaging="pom" buildtype="release"
+        groupId="org.lucee" artifactId="lucee.optional" version="${lucee.build.version.long}" name="lucee">
+        <dependencies>${depsoptionalxml}</dependencies>
+      </pom-and-deploy></target></project>]]></echo>
+    <ant antfile="${basedir}/build-mvnlibs.xml" inheritAll="true" target="libsxml.pom" />
+    <delete file="${basedir}/build-mvnlibs.xml"/>
+  </target>
+  
+  <target name="artifact.libs.generate" description="only needed for initial import, left for posterity">
+    <property name="libsxml" value="" />
+    <property name="depsxml" value="" />
+    <property name="depsoptionalxml" value="" />
+    <delete file="${basedir}/dependencies.xml"/>
+    <antcontrib:for param="file">
+      <path>
+        <fileset dir="${lib}" includes="*.jar" />
+      </path>
+      <sequential>
+        <antcontrib:var name="basename" unset="true" />
+        <basename file="@{file}" property="basename" suffix=".jar" />
+        <get-mvn-version jar="${basename}" version.property="__depVer" name.property="__depName" />
+        <antcontrib:propertyregex property="basename" input="${basename}" 
+         regexp="\." replace="-" global="true" override="yes"/>
+        <echo message="${basename} ${__depVer}"/>
+        <pom-and-deploy pomid="luceelibs.${basename}.pom" artifact="@{file}" packaging="jar" buildtype="release"
+         groupId="org.lucee.lib" artifactId="${__depName}" version="${__depVer}" name="${__depName}" />
+        <antcontrib:var name="depsxml"
+          value='${depsxml}&lt;dependency groupId="org.lucee.lib" artifactId="${basename}" version="${__depVer}"${line.separator}    type="jar" dest="${lib}" unzip="false"/&gt;${line.separator}' />
+      </sequential>
+    </antcontrib:for>
+    <echo file="${basedir}/dependencies.xml"><![CDATA[${depsxml}]]></echo>
+  </target>
+  
+  
+  
+</project>

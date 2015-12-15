@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project default="lucee.nginx.tomcat.artifacts" basedir="." name="lucee.nginx.tomcat" xmlns:antcontrib="antlib:net.sf.antcontrib">
+
+  <import file="build-tomcat.xml"/>
+
+  <target name="lucee.nginx.tomcat.artifacts" 
+  	depends="lucee.nginx.tomcat.jre.artifact" >
+  </target>
+
+  <target name="lucee.nginx.tomcat.jre.artifact" depends="lucee.nginx.tomcat.jre" >
+    <pom-and-deploy pomid="lucee.nginx.tomcat.jre.pom" packaging="pom" buildtype="${mvn.type}" repoId="cfdistro.repo.local"
+     groupId="org.lucee" artifactId="lucee.nginx.tomcat.jre" version="${lucee.build.version.long}" name="lucee.nginx.tomcat.jre">
+          <attachments>
+            <attach file="${installer.dist.dir}/lucee-nginx-tomcat-${lucee.build.version.long}-jre-linux64.zip" type="zip" classifier="linux64"/>
+            <attach file="${installer.dist.dir}/lucee-nginx-tomcat-${lucee.build.version.long}-jre-linux32.zip" type="zip" classifier="linux32"/>
+            <attach file="${installer.dist.dir}/lucee-nginx-tomcat-${lucee.build.version.long}-jre-win32.zip" type="zip" classifier="windows32"/>
+            <attach file="${installer.dist.dir}/lucee-nginx-tomcat-${lucee.build.version.long}-jre-win64.zip" type="zip" classifier="windows64"/>
+            <attach file="${installer.dist.dir}/lucee-nginx-tomcat-${lucee.build.version.long}-jre-darwin64.zip" type="zip" classifier="darwin64"/>
+          </attachments>
+    </pom-and-deploy>
+  </target>
+
+  <target name="lucee.nginx.tomcat.thisos">
+    <current-arch />
+    <property name="tomcat.os.list" value="${current.os}:${current.bittype}"/>
+    <antcontrib:runtarget target="lucee.nginx.tomcat.jre" />
+  </target>
+    
+  <target name="lucee.nginx.tomcat.jre" depends="lucee.tomcat.modcfml.jre">
+    <property name="jre.all.dir" value="${temp.dir}/jre-all"/>
+    <property name="tomcat.os.list" value="linux:32, linux:64, win:64, win:32, darwin:64"/>
+
+    <tomcat-setenv home="${temp.tomcat.dir}" jre.home="${jre.home.rel}" 
+      java.opts="-Xms128m -Xmx256m -XX:MaxPermSize=64m" javaagent="${javaagent.rel}lucee-inst.jar"/>  
+
+    <version-splitter property="tc.version" version="${build.tomcat.version}" bump=""/>
+    <antcontrib:for list="${tomcat.os.list}" param="type">
+      <sequential>
+        <antcontrib:propertyregex property="installer.os" input="@{type}" regexp="\s*([^:]+)" select="\1" override="true"/>
+        <antcontrib:propertyregex property="installer.bittype" input="@{type}" regexp=".*?:(.*)" select="\1" override="true"/>
+        <echo message="${ui.starbar}" />
+        <echo message="Building NGINX Tomcat w/JRE for ${installer.os} ${installer.bittype}" />
+        <antcontrib:var name="temp.tomcat.osdir" value="${temp.dir}/tomcat${installer.os}${installer.bittype}" />
+        <tomcat-configure-modcfml home="${temp.tomcat.osdir}/tomcat" enable="false"/>
+        <antcontrib:switch value="${installer.os}">
+          <case value="win">
+            <dependency groupId="org.cfmlprojects.nginx" artifactId="nginx-${installer.os}" version="${nginx.version}" type="zip"
+              dest="${temp.tomcat.osdir}/nginx" unzip="true" />
+          </case>
+          <default>
+            <dependency groupId="org.cfmlprojects.nginx" artifactId="nginx-${installer.os}${installer.bittype}" version="${nginx.version}" type="zip"
+              dest="${temp.tomcat.osdir}/nginx" unzip="true" />
+          </default>
+        </antcontrib:switch>
+        <nginx-configure template-dir="${lucee.tomcat.basedir}/resource/nginx" 
+          conf-dir="${temp.tomcat.osdir}/nginx/conf" http-port="8080"
+          proxy-to="127.0.0.1:8888" root-dir="../tomcat/webapps/ROOT"/>
+        <tomcat-nginx-ctl-win-unix title="Lucee NGINX and Tomcat Control Script"
+          tomcat-rel-ctl="tomcat"
+          nginx-rel-ctl="nginx"
+          win-script-path="${temp.tomcat.osdir}/lucee-ctl.bat"
+          unix-script-path="${temp.tomcat.osdir}/lucee-ctl" 
+        />
+        <!-- replace nginx with lucee-nginx -->
+        <delete dir="${temp.tomcat.osdir}/nginx" includes="nginx-ctl*"/>
+        <delete dir="${temp.tomcat.osdir}/nginx/bin/service/" includes="nginx*.exe"/>
+        <move todir="${temp.tomcat.osdir}/nginx/bin" includeemptydirs="false">
+          <fileset dir="${temp.tomcat.osdir}/nginx/bin">
+            <include name="nginx*"/>
+          </fileset>
+          <mapper type="glob" from="*" to="lucee-*"/>
+        </move>
+        <nginx-ctl-win-unix title="Lucee NGINX Server"
+          nginx-name="lucee-nginx"
+          home-rel-ctl=""
+          win-script-path="${temp.tomcat.osdir}/nginx/lucee-nginx-ctl.bat"
+          unix-script-path="${temp.tomcat.osdir}/nginx/lucee-nginx-ctl">
+        </nginx-ctl-win-unix>
+        <deamon-script-win dest="${temp.tomcat.osdir}/nginx/bin/service"
+          name="lucee-nginx"
+          title="lucee nginx server"
+          description="lucee nginx server"
+          console-success-output=""
+          ctl-script="%SERVICE_HOME%\\lucee-nginx-ctl.bat"
+          arg-start="start"
+          arg-stop="stop"
+          log-file-out="%SERVICE_HOME%\\logs\\lucee-nginx-service.log"
+          log-file-err="%SERVICE_HOME%\\logs\\lucee-nginx-service-err.log"
+          service-img="${nginx-ant.basedir}/nginx-service.png"
+        />
+        <deamon-script-nix dest="${temp.tomcat.osdir}/nginx/bin/daemon"
+          name="lucee-nginx"
+          title="lucee nginx server"
+          description="Lucee NGINX Server"
+          grep-success-string=""
+          grep-success-file=""
+          ctl-script="lucee-nginx-ctl"
+          pid-file="$SERVICE_DIR/logs/nginx.pid"
+          arg-start="start"
+          arg-stop="stop"
+          user="nginx"
+          log-file-out="$SERVICE_DIR/logs/lucee-nginx-service.log"
+          log-file-err="$SERVICE_DIR/logs/lucee-nginx-service-err.log"
+          additional='sed -i -e "s,#user  nobody,user  nobody $(id -gn nobody),g" $SERVICE_DIR/conf/nginx.conf'
+        />
+
+        <chmod dir="${temp.tomcat.osdir}" perm="ugo+rx" 
+               includes="**/*ctl,**/*.sh"/>
+        <chmod dir="${temp.tomcat.osdir}/nginx/bin" perm="ugo+rx" 
+               includes="*nginx,**/*.sh"/>
+
+        <antcontrib:switch value="${installer.os}">
+          <case value="win">
+            <delete dir="${temp.tomcat.osdir}/bin/daemon" />
+            <delete dir="${temp.tomcat.osdir}/tomcat/bin/daemon" />
+            <delete dir="${temp.tomcat.osdir}/nginx/bin/daemon" />
+            <delete dir="${temp.tomcat.osdir}" includes="**/lucee-*ctl" />
+            <fixcrlf srcdir="${temp.tomcat.osdir}" includes="**/*.bat, **/*.xml" eol="crlf" />
+          </case>
+          <case value="darwin">
+            <delete dir="${temp.tomcat.osdir}/bin/service" />
+            <delete dir="${temp.tomcat.osdir}/tomcat/bin/service" />
+            <delete dir="${temp.tomcat.osdir}/nginx/bin/service" />
+            <delete dir="${temp.tomcat.osdir}" includes="**/lucee-*ctl.bat" />
+          </case>
+          <default>
+            <delete dir="${temp.tomcat.osdir}/bin/service" />
+            <delete dir="${temp.tomcat.osdir}/tomcat/bin/service" />
+            <delete dir="${temp.tomcat.osdir}/nginx/bin/service" />
+            <delete dir="${temp.tomcat.osdir}" includes="**/lucee-*ctl.bat" />
+          </default>
+        </antcontrib:switch>
+        <zip destfile="${installer.dist.dir}/lucee-nginx-tomcat-${lucee.build.version.long}-jre-${installer.os}${installer.bittype}.zip" update="false">
+          <zipfileset dir="${temp.tomcat.osdir}/" 
+            prefix="lucee-tomcat" excludes="**/bin/**,lucee*,**/*-ctl,**/install.sh,**/remove.sh"/>
+          <zipfileset dir="${temp.tomcat.osdir}/" 
+             prefix="lucee-tomcat" includes="**/bin/**,lucee*,**/*-ctl,**/install.sh,**/remove.sh"
+            filemode="711"/>
+          <zipfileset prefix="lucee-tomcat/jre"
+            src="${jre.all.dir}/jre-${jre.version}-${installer.os}${installer.bittype}.zip"/>
+        </zip>
+      </sequential>
+    </antcontrib:for>
+  </target>
+
+  <macrodef name="tomcat-nginx-ctl-win-unix">
+    <attribute name="tomcat-rel-ctl"/>
+    <attribute name="nginx-rel-ctl"/>
+    <attribute name="unix-script-path" />
+    <attribute name="win-script-path" />
+    <attribute name="title" default="Tomcat Server Control Script"/>
+    
+    <sequential>
+      <echo message="Writing Control scripts @{unix-script-path} @{win-script-path}" />
+      <ctl-menu-unix title="@{title}" property="_ctl_menu">
+        <menu>
+          <option name="start-foreground" description="start nginx and run tomcat in foreground">
+            export CATALINA_PID="$SCRIPT_DIR/tomcat/bin/catalina.pid"
+            export CATALINA_HOME="$SCRIPT_DIR/tomcat"
+            export NGINX_HOME="$SCRIPT_DIR/nginx"
+            onINT() {
+              "$CATALINA_HOME/bin/"shutdown.sh
+              "$NGINX_HOME/"lucee-nginx-ctl stop
+              exit $?
+            }
+            trap "onINT" HUP INT QUIT ABRT KILL ALRM TERM TSTP
+            . "$CATALINA_HOME/bin/"catalina.sh start
+            "$NGINX_HOME/"lucee-nginx-ctl start;
+            wait `cat $CATALINA_PID`
+            trap - HUP INT QUIT ABRT KILL ALRM TERM TSTP
+          </option>
+          <option name="start" description="start the tomcat and nginx servers">
+            "$SCRIPT_DIR/@{tomcat-rel-ctl}/"lucee-tomcat-ctl start
+            "$SCRIPT_DIR/@{nginx-rel-ctl}/"lucee-nginx-ctl start;
+          </option>
+          <option name="stop" description="stop the tomcat and nginx servers">
+            "$SCRIPT_DIR/@{tomcat-rel-ctl}/"lucee-tomcat-ctl stop
+            "$SCRIPT_DIR/@{nginx-rel-ctl}/"lucee-nginx-ctl stop;
+          </option>
+          <option name="start-tomcat" description="start the tomcat application server">
+            "$SCRIPT_DIR/@{tomcat-rel-ctl}/"lucee-tomcat-ctl start
+          </option>
+          <option name="stop-tomcat" description="stop the tomcat application server">
+            "$SCRIPT_DIR/@{tomcat-rel-ctl}/"lucee-tomcat-ctl stop
+          </option>
+          <option name="start-nginx" description="start the nginx webserver">
+            "$SCRIPT_DIR/@{nginx-rel-ctl}/"lucee-nginx-ctl start
+          </option>
+          <option name="stop-nginx" description="stop the nginx webserver">
+            "$SCRIPT_DIR/@{nginx-rel-ctl}/"lucee-nginx-ctl stop
+          </option>
+          <option name="reload-nginx" description="reload the nginx webserver">
+            "$SCRIPT_DIR/@{nginx-rel-ctl}/"lucee-nginx-ctl reload
+          </option>
+          <option name="restart-nginx" description="restart the nginx webserver">
+            "$SCRIPT_DIR/@{nginx-rel-ctl}/"lucee-nginx-ctl restart
+          </option>
+          <option name="separator" />
+          <option name="install-nginx" description="install the nginx webserver daemon">
+            "$SCRIPT_DIR/@{nginx-rel-ctl}/bin/daemon/"install.sh
+          </option>
+          <option name="install-tomcat" description="install the tomcat application server daemon">
+            "$SCRIPT_DIR/@{tomcat-rel-ctl}/bin/daemon/"install.sh
+          </option>
+          <option name="remove-nginx" description="remove the nginx webserver daemon">
+            "$SCRIPT_DIR/@{nginx-rel-ctl}/bin/daemon/"remove.sh
+          </option>
+          <option name="remoe-tomcat" description="remove the tomcat application server daemon">
+            "$SCRIPT_DIR/@{tomcat-rel-ctl}/bin/daemon/"remove.sh
+          </option>
+        </menu>
+      </ctl-menu-unix>
+      <echo file="@{unix-script-path}" message="${_ctl_menu}"/>
+      <chmod file="@{unix-script-path}" perm="ugo+rx"/>
+      <ctl-menu-windows title="@{title}" property="_ctl_menu">
+        <menu>
+          <option name="start" description="start the tomcat and nginx servers">
+            SET SCRIPT_DIR=%BASE_SCRIPT_DIR%\@{tomcat-rel-ctl}
+            CALL "%SCRIPT_DIR%"\lucee-tomcat-ctl.bat start
+            SET SCRIPT_DIR=%BASE_SCRIPT_DIR%\@{nginx-rel-ctl}
+            CALL "%SCRIPT_DIR%"\lucee-nginx-ctl.bat start
+          </option>
+          <option name="stop" description="stop the tomcat and nginx servers">
+            SET SCRIPT_DIR=%BASE_SCRIPT_DIR%\@{tomcat-rel-ctl}
+            CALL "%SCRIPT_DIR%"\lucee-tomcat-ctl.bat stop
+            SET SCRIPT_DIR=%BASE_SCRIPT_DIR%\@{nginx-rel-ctl}
+            CALL "%SCRIPT_DIR%"\lucee-nginx-ctl.bat stop
+          </option>
+          <option name="start-tomcat" description="start the tomcat application server">
+            SET SCRIPT_DIR=%SCRIPT_DIR%\@{tomcat-rel-ctl}
+            CALL "%SCRIPT_DIR%"\lucee-tomcat-ctl.bat start
+          </option>
+          <option name="stop-tomcat" description="stop the tomcat application server">
+            SET SCRIPT_DIR=%SCRIPT_DIR%\@{tomcat-rel-ctl}
+            CALL "%SCRIPT_DIR%"\lucee-tomcat-ctl.bat stop
+          </option>
+          <option name="start-nginx" description="start the nginx webserver">
+            SET SCRIPT_DIR=%SCRIPT_DIR%\@{nginx-rel-ctl}
+            CALL "%SCRIPT_DIR%"\lucee-nginx-ctl.bat start
+          </option>
+          <option name="stop-nginx" description="stop the nginx webserver">
+            SET SCRIPT_DIR=%SCRIPT_DIR%\@{nginx-rel-ctl}
+            CALL "%SCRIPT_DIR%"\lucee-nginx-ctl.bat stop
+          </option>
+          <option name="reload-nginx" description="reload the nginx webserver">
+            SET SCRIPT_DIR=%SCRIPT_DIR%\@{nginx-rel-ctl}
+            CALL "%SCRIPT_DIR%"\lucee-nginx-ctl.bat reload
+          </option>
+          <option name="restart-nginx" description="restart the nginx webserver">
+            SET SCRIPT_DIR=%SCRIPT_DIR%\@{nginx-rel-ctl}
+            CALL "%SCRIPT_DIR%"\lucee-nginx-ctl.bat restart
+          </option>
+          <option name="separator" />
+          <option name="install-nginx" description="install the nginx webserver daemon">
+            SET SCRIPT_DIR=%SCRIPT_DIR%\@{nginx-rel-ctl}
+            CALL "%SCRIPT_DIR%\bin\service\"install-service.bat install
+            CALL "%SCRIPT_DIR%\bin\service\"install-service.bat start
+          </option>
+          <option name="install-tomcat" description="install the tomcat application server daemon">
+            SET SCRIPT_DIR=%SCRIPT_DIR%\@{tomcat-rel-ctl}
+            CALL "%SCRIPT_DIR%\bin\service\"install-service.bat install
+            CALL "%SCRIPT_DIR%\bin\service\"install-service.bat start
+          </option>
+          <option name="remove-nginx" description="remove the nginx webserver daemon">
+            SET SCRIPT_DIR=%SCRIPT_DIR%\@{nginx-rel-ctl}
+            CALL "%SCRIPT_DIR%\bin\service\"install-service.bat uninstall
+          </option>
+          <option name="remove-tomcat" description="remove the tomcat application server daemon">
+            SET SCRIPT_DIR=%SCRIPT_DIR%\@{tomcat-rel-ctl}
+            CALL "%SCRIPT_DIR%\bin\service\"install-service.bat uninstall
+          </option>
+        </menu>
+      </ctl-menu-windows>
+      <echo file="@{win-script-path}" message="${_ctl_menu}"/>
+      <fixcrlf file="@{win-script-path}" eol="crlf" />
+    </sequential>
+  </macrodef>
+  
+</project>

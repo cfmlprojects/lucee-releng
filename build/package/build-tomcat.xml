@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project default="lucee.tomcat" basedir="." name="lucee.tomcat" xmlns:antcontrib="antlib:net.sf.antcontrib">
+
+  <dirname property="lucee.tomcat.basedir" file="${ant.file.lucee.tomcat}" />
+  <import file="build-war.xml"/>
+
+  <target name="lucee.tomcat.artifacts" 
+  	depends="lucee.tomcat.artifact, lucee.tomcat.modcfml.artifact, lucee.tomcat.modcfml.jre.artifact" >
+  </target>
+
+  <target name="lucee.tomcat.artifact" depends="lucee.tomcat" >
+    <pom-and-deploy pomid="lucee.tomcat.pom" packaging="zip" buildtype="${mvn.type}" repoId="cfdistro.repo.local"
+     groupId="org.lucee" artifact="${installer.dist.dir}/lucee-tomcat-${lucee.build.version.long}.zip" 
+     artifactId="lucee.tomcat" version="${lucee.build.version.long}" name="lucee.tomcat" />
+  </target>
+	
+  <target name="lucee.tomcat.modcfml.artifact" depends="lucee.tomcat.modcfml" >
+    <pom-and-deploy pomid="lucee.tomcat.pom" packaging="zip" buildtype="${mvn.type}" repoId="cfdistro.repo.local"
+     groupId="org.lucee" artifact="${installer.dist.dir}/lucee-tomcat-modcfml-${lucee.build.version.long}.zip" 
+     artifactId="lucee.tomcat.modcfml" version="${lucee.build.version.long}" name="lucee.tomcat.modcfml" />
+  </target>
+	
+  <target name="lucee.tomcat.modcfml.jre.artifact" depends="lucee.tomcat.modcfml.jre" >
+    <pom-and-deploy pomid="lucee.tomcat.jre.pom" packaging="pom" buildtype="${mvn.type}" repoId="cfdistro.repo.local"
+     groupId="org.lucee" artifactId="lucee.tomcat.modcfml.jre" version="${lucee.build.version.long}" name="lucee.tomcat.modcfml.jre">
+          <attachments>
+            <attach file="${installer.dist.dir}/lucee-tomcat-modcfml-${lucee.build.version.long}-jre-linux64.zip" type="zip" classifier="linux64"/>
+            <attach file="${installer.dist.dir}/lucee-tomcat-modcfml-${lucee.build.version.long}-jre-linux32.zip" type="zip" classifier="linux32"/>
+            <attach file="${installer.dist.dir}/lucee-tomcat-modcfml-${lucee.build.version.long}-jre-win32.zip" type="zip" classifier="windows32"/>
+            <attach file="${installer.dist.dir}/lucee-tomcat-modcfml-${lucee.build.version.long}-jre-win64.zip" type="zip" classifier="windows64"/>
+            <attach file="${installer.dist.dir}/lucee-tomcat-modcfml-${lucee.build.version.long}-jre-darwin64.zip" type="zip" classifier="darwin64"/>
+          </attachments>
+    </pom-and-deploy>
+  </target>
+
+<!--
+  <target name="lucee.tomcat">
+-->
+  <target name="lucee.tomcat" depends="war.zip">
+  	<delete dir="${temp.luceetomcat.dir}" />
+
+  	<tomcat-install home="${temp.tomcat.dir}" version="${build.tomcat.version}" />
+    <tomcat-configure home="${temp.tomcat.dir}" port.stop="${build.tomcat.port.stop}"
+    	port.http="${build.tomcat.port.http}" port.ajp="${build.tomcat.port.ajp}" />
+
+    <relpath property="javaagent.rel" from="${temp.tomcat.dir}/bin/" to="${temp.luceetomcat.lib.dir}/"/>
+    <tomcat-setenv home="${temp.tomcat.dir}" jre.home="NOJRE"
+      java.opts="-Xms128m -Xmx256m -XX:MaxPermSize=64m" javaagent="${javaagent.rel}lucee-inst.jar"/>
+
+  	<delete dir="${temp.tomcat.dir}/webapps" />
+  	<unzip src="${dist.dir}/bundles/lucee-${version}.war" dest="${temp.tomcat.dir}/webapps/ROOT/" />
+  	<move toDir="${temp.tomcat.dir}/lucee-server">
+  	  <fileset dir="${temp.tomcat.dir}/webapps/ROOT/lucee-server" />
+    </move>
+    
+
+  	<tomcat-configure-cfml home="${temp.tomcat.dir}"
+      cfengine.version="${version}-SNAPSHOT" 
+  	  cfengine.lib.dir="${temp.luceetomcat.lib.dir}"
+      cfengine.lib.src="${temp.tomcat.dir}/webapps/ROOT/WEB-INF/lib"/>
+  	<delete dir="${temp.tomcat.dir}/webapps/ROOT/WEB-INF/lib" />
+    <!-- replace default tomcat ctl -->
+    <delete includes="tomcat-ctl*" dir="${temp.tomcat.dir}" />
+    <tomcat-ctl-win-unix
+      title="Lucee Tomcat Control Script"
+      ctl-name="lucee-tomcat-ctl"
+      service-name="lucee-tomcat"
+      service-title="Lucee Tomcat"
+      service-desc="Lucee Tomcat server"
+      service-ico="${lucee.tomcat.basedir}/resource/img/lucee-x16-x32-4bit.ico"
+      home-rel-ctl=""
+      dest="${temp.tomcat.dir}">
+    </tomcat-ctl-win-unix>
+
+  	<relpath property="tomcat.home.rel.ctl" from="${temp.luceetomcat.dir}" to="${temp.tomcat.dir}"/>       
+    <tomcat-ctl-win-unix
+      title="Lucee Control Script"
+      ctl-name="lucee-ctl"
+      service-name="lucee-tomcat"
+      service-title="Lucee Tomcat"
+      service-desc="Lucee Tomcat server"
+      service-ico="${lucee.tomcat.basedir}/resource/img/lucee-x16-x32-4bit.ico"
+      home-rel-ctl="tomcat"
+      dest="${temp.luceetomcat.dir}">
+    </tomcat-ctl-win-unix>
+
+
+    <!-- create main ctl -->
+    <deamon-script-nix dest="${temp.luceetomcat.dir}/bin/daemon"
+      name="lucee-tomcat"
+      title="Lucee Tomcat server"
+      description="Lucee Tomcat server"
+      ctl-script="lucee-ctl"
+      pid-file="$SERVICE_DIR/tomcat/bin/catalina.pid"
+      arg-start="start-foreground"
+      arg-stop="stop"
+      user="lucee"
+      log-file-out="#SERVICE_DIR#/tomcat/logs/lucee-tomcat-service.log"
+      log-file-err="#SERVICE_DIR#/tomcat/logs/lucee-tomcat-service-err.log"
+      grep-success-string="Tomcat started"
+      grep-success-file="#SERVICE_DIR#/tomcat/logs/lucee-tomcat-service.log"
+      additional=''
+    />
+    <deamon-script-win dest="${temp.luceetomcat.dir}/bin/service"
+      name="lucee-tomcat"
+      title="Lucee Tomcat server"
+      description="Lucee Tomcat server"
+      console-success-output=""
+      ctl-script="%SERVICE_HOME%\\lucee-ctl.bat"
+      arg-start="start"
+      arg-stop="stop"
+      log-file-out="%SERVICE_HOME%\\logs\\lucee-tomcat-service.log"
+      log-file-err="%SERVICE_HOME%\\logs\\lucee-tomcat-service-err.log"
+      service-ico="${lucee.tomcat.basedir}/resource/img/lucee-x16-x32-4bit.ico"
+    />
+    <chmod dir="${temp.tomcat.dir}/bin" perm="ugo+rx" 
+           includes="**/*.sh"/>
+    <delete file="${installer.dist.dir}/lucee-tomcat-${lucee.build.version.long}.zip"/>
+    <fixcrlf srcdir="${temp.luceetomcat.dir}" includes="**/*.bat" eol="crlf" />
+    <zip destfile="${installer.dist.dir}/lucee-tomcat-${lucee.build.version.long}.zip">
+      <zipfileset dir="${temp.luceetomcat.dir}/" 
+        prefix="lucee-tomcat" excludes="**/bin/**,lucee-*ctl*"/>
+      <zipfileset dir="${temp.luceetomcat.dir}/" 
+         prefix="lucee-tomcat" includes="**/bin/**,lucee-*ctl*"
+        filemode="711"/>
+    </zip>
+  </target>
+
+  <target name="lucee.tomcat.modcfml" depends="lucee.tomcat">
+    <relpath property="javaagent.rel" from="${temp.tomcat.dir}/bin/" to="${temp.luceetomcat.lib.dir}/"/>
+    <tomcat-configure home="${temp.tomcat.dir}" port.stop="${build.tomcat.port.stop}"
+      port.http="${build.tomcat.port.http}" port.ajp="${build.tomcat.port.ajp}" />
+  	<tomcat-setenv home="${temp.tomcat.dir}" jre.home="NOJRE"
+     	java.opts="-Xms128m -Xmx256m -XX:MaxPermSize=64m" javaagent="${javaagent.rel}lucee-inst.jar"/>  
+    <tomcat-configure-modcfml home="${temp.tomcat.dir}"/>
+    <delete file="${installer.dist.dir}/lucee-tomcat-modcfml-${lucee.build.version.long}.zip"/>
+    <fixcrlf srcdir="${temp.luceetomcat.dir}" includes="**/*.bat" eol="crlf" />
+    <zip destfile="${installer.dist.dir}/lucee-tomcat-modcfml-${lucee.build.version.long}.zip">
+      <zipfileset dir="${temp.luceetomcat.dir}/" 
+        prefix="lucee-tomcat" excludes="**/bin/**,lucee-*ctl*"/>
+      <zipfileset dir="${temp.luceetomcat.dir}/" 
+      	prefix="lucee-tomcat" includes="**/bin/**,lucee-*ctl*"
+        filemode="711"/>
+    </zip>
+  </target>
+	
+  <target name="lucee.tomcat.modcfml.jre" depends="lucee.tomcat.modcfml">
+    <property name="jre.all.dir" value="${temp.dir}/jre-all"/>
+<!--
+    <current-arch />
+    <property name="tomcat.os.list" value="${current.os}:${current.bittype}"/>
+-->
+    <property name="tomcat.os.list" value="linux:32, linux:64, win:64, win:32, darwin:64"/>
+    <relpath property="jre.home.rel" from="${temp.tomcat.dir}/bin/" to="${temp.luceetomcat.dir}/jre"/>
+    <relpath property="javaagent.rel" from="${temp.tomcat.dir}/bin/" to="${temp.luceetomcat.lib.dir}/"/>
+
+	  <tomcat-setenv home="${temp.tomcat.dir}" jre.home="${jre.home.rel}" 
+      java.opts="-Xms128m -Xmx256m -XX:MaxPermSize=64m" javaagent="${javaagent.rel}lucee-inst.jar"/>  
+
+	  <version-splitter property="tc.version" version="${build.tomcat.version}" bump=""/>
+    <delete dir="${jre.all.dir}" />
+    <antcontrib:for list="${tomcat.os.list}" param="type">
+      <sequential>
+        <antcontrib:propertyregex property="installer.os" input="@{type}" regexp="\s*([^:]+)" select="\1" override="true"/>
+        <antcontrib:propertyregex property="installer.bittype" input="@{type}" regexp=".*?:(.*)" select="\1" override="true"/>
+        <echo message="${ui.starbar}" />
+        <echo message="Building Tomcat w/JRE for ${installer.os} ${installer.bittype}" />
+        <dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip"
+          classifier="${installer.os}${installer.bittype}" dest="${jre.all.dir}" unzip="false" />
+      	<antcontrib:var name="temp.tomcat.osdir" value="${temp.dir}/tomcat${installer.os}${installer.bittype}" />
+        <delete dir="${temp.tomcat.osdir}" />
+        <copy todir="${temp.tomcat.osdir}">
+        	<fileset dir="${temp.luceetomcat.dir}" />
+      	</copy>
+        <antcontrib:switch value="${installer.os}">
+          <case value="win">
+            <delete dir="${temp.tomcat.osdir}/tomcat/bin" includes="tcnative-1.dll,tomcat8.exe,tomcat8w.exe"/>
+            <delete dir="${temp.tomcat.osdir}" includes="lucee-ctl"/>
+            <antcontrib:switch value="${installer.bittype}">
+              <case value="64">
+              	<echo message="Adding natives for win64"/>
+              	<dependency groupId="org.apache.tomcat" artifactId="native" version="${tc.version.major}" 
+                  classifier="win64" dest="${temp.tomcat.osdir}/tomcat/bin" unzip="true" />
+              </case>
+              <case value="32">
+                <echo message="Adding natives for win32"/>
+              	<dependency groupId="org.apache.tomcat" artifactId="native" version="${tc.version.major}" 
+                  classifier="win32" dest="${temp.tomcat.osdir}/tomcat/bin" unzip="true" />
+              </case>
+            </antcontrib:switch>
+            <fixcrlf srcdir="${temp.tomcat.osdir}" includes="**/*.bat, **/*.xml" eol="crlf" />
+          </case>
+          <case value="darwin">
+            <delete dir="${temp.tomcat.osdir}" includes="lucee-ctl.bat"/>
+            <fixcrlf srcdir="${temp.tomcat.osdir}/tomcat/conf" includes="**/*.xml" eol="lf" />
+          </case>
+          <default>
+            <delete dir="${temp.tomcat.osdir}" includes="lucee-ctl.bat"/>
+            <fixcrlf srcdir="${temp.tomcat.osdir}/tomcat/conf" includes="**/*.xml" eol="lf" />
+          </default>
+        </antcontrib:switch>
+        <zip destfile="${installer.dist.dir}/lucee-tomcat-modcfml-${lucee.build.version.long}-jre-${installer.os}${installer.bittype}.zip" update="false">
+          <zipfileset dir="${temp.tomcat.osdir}/" 
+            prefix="lucee-tomcat" excludes="**/bin/**,lucee*"/>
+          <zipfileset dir="${temp.tomcat.osdir}/" 
+             prefix="lucee-tomcat" includes="**/bin/**,lucee*"
+            filemode="711"/>
+          <zipfileset prefix="lucee-tomcat/jre"
+          	src="${jre.all.dir}/jre-${jre.version}-${installer.os}${installer.bittype}.zip"/>
+        </zip>
+      </sequential>
+    </antcontrib:for>
+  </target>
+
+
+</project>

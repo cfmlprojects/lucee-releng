@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project default="lucee.jetty" basedir="." name="LuceeJetty" xmlns:antcontrib="antlib:net.sf.antcontrib">
+
+  <import file="build-war.xml"/>
+
+  <target name="lucee.jetty.artifacts"
+    depends="lucee.jetty.artifact, lucee.jetty.jre.artifact" >
+  </target>
+
+  <target name="lucee.jetty.artifact" depends="lucee.jetty" >
+    <pom-and-deploy pomid="lucee.jetty.pom" packaging="zip" buildtype="${mvn.type}" repoId="cfdistro.repo.local"
+     groupId="org.lucee" artifact="${installer.dist.dir}/lucee-jetty-${lucee.build.version.long}.zip" 
+     artifactId="lucee.jetty" version="${lucee.build.version.long}" name="lucee.jetty" />
+  </target>
+  
+  <target name="lucee.jetty.jre.artifact" depends="lucee.jetty.jre" >
+    <pom-and-deploy pomid="lucee.jetty.jre.pom" packaging="pom" buildtype="${mvn.type}" repoId="cfdistro.repo.local"
+     groupId="org.lucee" artifactId="lucee.jetty.jre" version="${lucee.build.version.long}" name="lucee.jetty.jre">
+          <attachments>
+            <attach file="${installer.dist.dir}/lucee-jetty-${lucee.build.version.long}-jre-linux64.zip" type="zip" classifier="linux64"/>
+            <attach file="${installer.dist.dir}/lucee-jetty-${lucee.build.version.long}-jre-linux32.zip" type="zip" classifier="linux32"/>
+            <attach file="${installer.dist.dir}/lucee-jetty-${lucee.build.version.long}-jre-win32.zip" type="zip" classifier="windows32"/>
+            <attach file="${installer.dist.dir}/lucee-jetty-${lucee.build.version.long}-jre-win64.zip" type="zip" classifier="windows64"/>
+            <attach file="${installer.dist.dir}/lucee-jetty-${lucee.build.version.long}-jre-darwin64.zip" type="zip" classifier="darwin64"/>
+          </attachments>
+    </pom-and-deploy>
+  </target>
+
+  <target name="lucee.jetty" depends="war.zip" description="Builds lucee-jetty.">
+    <delete dir="${temp.luceejetty.dir}"/>
+    <antcontrib:var name="jetty.dir" value="${temp.jetty.dir}" />
+    
+    <jetty-install version="${jetty.version}" home="${jetty.dir}" force="true"/>
+    <jetty-configure home="${temp.jetty.dir}"
+      port.http="${build.jetty.port.http}" port.ajp="${build.jetty.port.ajp}" />
+
+    <relpath property="javaagent.rel" from="${temp.jetty.dir}/bin/" to="${temp.luceejetty.lib.dir}/"/>
+    <jetty-setenv home="${temp.jetty.dir}" jre.home="NOJRE"
+      java.opts="-Xms128m -Xmx256m -XX:MaxPermSize=64m" javaagent="${javaagent.rel}/lucee-inst.jar"/>
+    <delete dir="${jetty.dir}/webapps"/>
+  	<unzip src="${dist.dir}/bundles/lucee-${version}.war" dest="${jetty.dir}/webapps/root" />
+
+  	<jetty-configure-cfml home="${temp.jetty.dir}"
+     cfengine.version="${version}-SNAPSHOT" cfengine.lib.dir="${temp.luceejetty.lib.dir}"
+     cfengine.lib.src="${jetty.dir}/webapps/root/WEB-INF/lib"/>
+    <delete dir="${jetty.dir}/webapps/root/WEB-INF/lib" />
+    <jetty-ctl-win-unix jetty-dir-rel="jetty/" stop-port="8887"
+      unix-script-path="${temp.luceejetty.dir}/lucee-ctl"
+      win-script-path="${temp.luceejetty.dir}/lucee-ctl.bat"
+     />
+
+    <chmod dir="${temp.luceejetty.dir}" perm="ugo+rx" 
+           includes="start*,stop*"/>
+  	<fixcrlf srcdir="${temp.luceejetty.dir}" includes="**/*.bat" eol="crlf" />
+  	
+  	<zip destfile="${lucee.jetty.zip.file}" update="false">
+      <zipfileset dir="${temp.luceejetty.dir}" includes="start*,stop*,jetty/bin/*" 
+      	prefix="lucee-jetty" filemode="755" />
+      <zipfileset dir="${temp.luceejetty.dir}" excludes="start*,stop*,jetty/bin/*"
+        prefix="lucee-jetty"/>
+    </zip>
+  </target>
+
+  <target name="lucee.jetty.jre" depends="lucee.jetty">
+    <property name="jre.all.dir" value="${temp.dir}/jre-all"/>
+    <property name="jetty.os.list" value="linux:32, linux:64, win:64, win:32, darwin:64"/>
+    <relpath property="jre.home.rel" from="${temp.jetty.dir}/bin/" to="${temp.luceejetty.dir}/jre"/>
+    <relpath property="javaagent.rel" from="${temp.jetty.dir}/bin/" to="${temp.luceejetty.lib.dir}/"/>
+
+    <jetty-setenv home="${temp.jetty.dir}" jre.home="${jre.home.rel}" 
+      java.opts="-Xms128m -Xmx256m -XX:MaxPermSize=64m" javaagent="${javaagent.rel}/lucee-inst.jar"/>  
+
+    <delete dir="${jre.all.dir}" />
+    <antcontrib:var name="temp.jetty.osdir" value="${temp.dir}/jetty${installer.os}${installer.bittype}" />
+    <delete dir="${temp.jetty.osdir}" />
+    <copy todir="${temp.jetty.osdir}">
+      <fileset dir="${temp.luceejetty.dir}" />
+    </copy>
+    <antcontrib:for list="${jetty.os.list}" param="type">
+      <sequential>
+        <antcontrib:propertyregex property="installer.os" input="@{type}" regexp="\s*([^:]+)" select="\1" override="true"/>
+        <antcontrib:propertyregex property="installer.bittype" input="@{type}" regexp=".*?:(.*)" select="\1" override="true"/>
+        <dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip"
+          classifier="${installer.os}${installer.bittype}" dest="${jre.all.dir}" unzip="false" />
+        <fixcrlf srcdir="${temp.jetty.dir}" includes="**/*.xml" eol="lf" />
+        <antcontrib:switch value="${installer.os}">
+          <case value="win">
+            <antcontrib:var name="jettyStart" value="${temp.luceejetty.dir}/start.bat" />
+            <echo file="${jettyStart}" message="${jetty.start.bat}" />
+            <fixcrlf srcdir="${temp.jetty.dir}" includes="**/*.xml,**/*.bat" eol="crlf" />
+          </case>
+          <case value="darwin">
+            <antcontrib:var name="jettyStart" value="${temp.luceejetty.dir}/start.cmd" />
+            <echo file="${jettyStart}" message='${jetty.start.sh}' />
+          </case>
+          <default>
+            <antcontrib:var name="jettyStart" value="${temp.luceejetty.dir}/start.sh" />
+            <echo file="${jettyStart}" message='${jetty.start.sh}' />
+          </default>
+        </antcontrib:switch>
+        <echo message="jetty w/jre for ${installer.os} ${installer.bittype}" />
+        <zip destfile="${installer.dist.dir}/lucee-jetty-${lucee.build.version.long}-jre-${installer.os}${installer.bittype}.zip" update="false">
+          <zipfileset dir="${temp.jetty.dir}/" 
+            includes="**" prefix="lucee-jetty/jetty/"
+            excludes="bin/**"/>
+          <zipfileset dir="${temp.jetty.dir}/" 
+            includes="bin/**" prefix="lucee-jetty/jetty/"
+            filemode="711"/>
+          <zipfileset file="${jettyStart}" 
+            prefix="lucee-jetty/" filemode="711"/>
+          <zipfileset prefix="lucee-jetty/jre"
+            src="${jre.all.dir}/jre-${jre.version}-${installer.os}${installer.bittype}.zip"/>
+        </zip>
+      </sequential>
+    </antcontrib:for>
+  </target>	
+
+</project>

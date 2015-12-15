@@ -3,12 +3,7 @@
 
 	<import file="../build-core.xml"/>
 
-  <!--
   <target name="war.zip" depends="libs.zip" description="builds the war package">
-  -->
-  <target name="war.zip" description="builds the war package">
-    <delete dir="${temp.dir}/libs" />
-    <mvn-get-deps scope="runtime" todir="${temp.dir}/libs" pomfile="${src.dir}/loader/pom.xml" />
     <!-- jars zip 
     <zip destfile="${dist.dir}/bundles/lucee-${version}-jars.zip">
       <zipfileset dir="${dist.dir}" includes="lucee.jar,lucee-inst.jar"/>

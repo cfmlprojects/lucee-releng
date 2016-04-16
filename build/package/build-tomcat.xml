@@ -36,7 +36,7 @@
 <!--
   <target name="lucee.tomcat">
 -->
-  <target name="lucee.tomcat" depends="war.zip">
+  <target name="lucee.tomcat" depends="war.artifact">
   	<delete dir="${temp.luceetomcat.dir}" />
 
   	<tomcat-install home="${temp.tomcat.dir}" version="${build.tomcat.version}" />

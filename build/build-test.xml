@@ -50,8 +50,8 @@
     <echo file="${src.dir}/tests/HttpAntRunner.cfc"><![CDATA[<cfcomponent extends="mxunit.runner.HttpAntRunner"></cfcomponent>]]></echo>
 	  <dependency artifactId="mysql-connector-java-bin" groupId="org.lucee.lib" version="5.1.20" type="jar" dest="${war.target.dir}/WEB-INF/lib" />
 	  <dependency artifactId="postgresql" groupId="org.lucee.lib" version="9.1-901" type="jar" dest="${war.target.dir}/WEB-INF/lib" />
-    <dependency artifactId="testbox" groupId="com.ortussolutions" version="2.2.0" mapping="/testbox" />
-    <mapping physical="@ext.mappings.dir@/org.coldbox/testbox/2.2.0/system/testing/compat" virtual="/mxunit"/>
+    <dependency artifactId="testbox" groupId="com.ortussolutions" version="2.4.0" mapping="/testbox" />
+    <mapping physical="@ext.mappings.dir@/org.coldbox/testbox/2.4.0/system/testing/compat" virtual="/mxunit"/>
     <mapping physical="@src.dir@/test" virtual="/lucee-tests" scmurl="@sc.lucee.http@"/>
     <mapping physical="@src.dir@/test" virtual="/testcases" scmurl="@sc.lucee.http@"/>
     <lucee-datasource name="lucee_mirror" jdbcstring="jdbc:h2:${temp.dir}/h2dbs/lucee-db/lucee-db" />

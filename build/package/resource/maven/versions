@@ -236,5 +236,6 @@
   <jar path="javax-el.jar" version="2.2.0" comment="5.0" hash="4d6443a069371e8eb53437bf85bd9cb5"/>
   <jar path="org-mortbay-jetty.jar" version="4.2.19" comment="" hash="82631a75adaab1a5423a62eadbb858c2"/>
   <jar path="org.apache.felix.main" version="4.2.1" comment="5.0" hash="f6882c57c7e6cc01ce7909ebbc48e8a0"/>
+  <jar path="jsch-0.1.53.jar" version="0.1.53" comment="4.5.3" hash="c0100ab204ee4ce8e693c4fd6cf7f900"/>
 
 </jars>

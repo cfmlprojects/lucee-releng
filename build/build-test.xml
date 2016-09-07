@@ -84,7 +84,7 @@
 	</target>
 	
 	<target name="test" depends="tests.init">
-		<server-run>
+		<server-run timeout="${server.start.timeout}">
 			<!--
 			<mxunit-call 
 				path="${mxunit.tests.dir}" componentPath="${mxunit.componentpath}"

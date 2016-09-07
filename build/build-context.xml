@@ -64,6 +64,7 @@
       </cftry><cfoutput>lucee Admin compiled to #url.lar_file#</cfoutput>
       ]]>
     </echo>
+    <echo message="Created ${war.target.dir}/compileAdmin.cfm" />
     <server-run>
       <echo>Compiling Railo Administrator</echo>
       <antcontrib:urlencode name="admincfml.location" location="${context.src.dir}" />

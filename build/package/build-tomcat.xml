@@ -38,7 +38,6 @@
 -->
   <target name="lucee.tomcat" depends="war.artifact">
   	<delete dir="${temp.luceetomcat.dir}" />
-
   	<tomcat-install home="${temp.tomcat.dir}" version="${build.tomcat.version}" />
     <tomcat-configure home="${temp.tomcat.dir}" port.stop="${build.tomcat.port.stop}"
     	port.http="${build.tomcat.port.http}" port.ajp="${build.tomcat.port.ajp}" />

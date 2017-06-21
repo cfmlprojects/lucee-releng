@@ -53,6 +53,7 @@
     <property name="srcInst" location="${src.dir}/instrumentation/src/main/java"/> 
     <!-- set class path for the compiler -->
     <mvn-get-deps scope="runtime" todir="${temp.dir}/libs" pomfile="${src.dir}/loader/pom.xml" />
+    <mvn-get-deps scope="provided" todir="${temp.dir}/libs" pomfile="${src.dir}/loader/pom.xml" />
     <path id="classpath">
       <fileset dir="${temp.dir}/libs">
         <include name="**/*.jar" />
@@ -118,6 +119,7 @@
   <target name="libs.zip" depends="core.artifact" description="builds the lexs package">
     <delete dir="${temp.dir}/libs" />
     <mvn-get-deps scope="runtime" todir="${temp.dir}/libs" pomfile="${src.dir}/loader/pom.xml" />
+    <mvn-get-deps scope="provided" todir="${temp.dir}/libs" pomfile="${src.dir}/loader/pom.xml" />
     <zip destfile="${dist.dir}/bundles/lucee-${version}-libs.zip">
         <zipfileset dir="${temp.dir}/libs"/>    
     </zip>

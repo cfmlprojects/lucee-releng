@@ -74,6 +74,8 @@
   
   <target name="loader.compile" description="copy none java files" depends="exists.src.xml">
     <antcontrib:var name="luceeinfo" unset="true" />
+    <delete dir="${src.dir}/cache" />
+    <delete dir="${src.dir}/temp" />
     <xmlproperty file="${src.dir}/loader/pom.xml" prefix="luceeinfo" keeproot="false" />
     <version-splitter property="lucee.build.version" version="${luceeinfo.version}" bump=""/>
     <maven-run basedir="${src.dir}/loader"
@@ -87,6 +89,13 @@
     <pom-and-deploy pomid="lucee" artifact="${src.dir}/loader/target/lucee-${luceeinfo.version}.jar" packaging="jar" buildtype="${mvn.type}"
     groupId="org.lucee" artifactId="lucee" version="${lucee.build.version.long}" name="lucee" />
 
+	  <!-- bundles-less lucee jar -->
+    <zip destfile="${temp.dir}/lucee-nobundles.zip" update="true">
+      <zipfileset src="${src.dir}/loader/target/lucee-${luceeinfo.version}.jar" excludes="bundles/**" />
+    </zip>
+    <pom-and-deploy pomid="lucee-nobundles" artifact="${temp.dir}/lucee-nobundles.zip" packaging="jar" buildtype="${mvn.type}"
+    groupId="org.lucee" artifactId="lucee.nobundles" version="${lucee.build.version.long}" name="lucee.nobundles" />
+	  
 	  <!-- artifacts for config templates -->
     <zip destfile="${temp.dir}/lucee-config.zip" update="true">
       <fileset dir="${src.dir}/core/src/main/java/resource/config/" includes="server.xml, web.xml" />
@@ -125,6 +134,9 @@
     </zip>
     <zip destfile="${dist.dir}/bundles/lucee-${version}-lexs.zip">
         <zipfileset dir="${src.dir}/loader/target/classes/extensions/" includes="*.lex"/>    
+    </zip>
+    <zip destfile="${dist.dir}/bundles/lucee-${version}-bundles.zip">
+        <zipfileset dir="${src.dir}/loader/target/classes/bundles/" prefix="" />    
     </zip>
   </target>
 
